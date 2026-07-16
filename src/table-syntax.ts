@@ -55,7 +55,7 @@ type Align = "center" | "left" | "none" | "right";
  * handles the result — and accepts a strict superset of stock tables. When
  * composing manually, use it *instead of* the stock extension; if the stock
  * extension is also present, register this one *after* it so it takes
- * precedence (`remark-wikilink/gfm` does this for you).
+ * precedence (`@lxcid/remark-wikilink/gfm` does this for you).
  */
 export function gfmTable(): Extension {
   return {

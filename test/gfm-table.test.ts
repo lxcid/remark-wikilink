@@ -4,7 +4,6 @@ import remarkWikilink, { type WikiEmbed, type WikiLink } from "@lxcid/remark-wik
 import remarkGfmWithWikilink from "@lxcid/remark-wikilink/gfm";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
-import remarkStringify from "remark-stringify";
 import { unified } from "unified";
 import {
   cell,
@@ -13,7 +12,6 @@ import {
   parseWikiGfm,
   row,
   signature,
-  stripPositions,
   theTable,
 } from "./util.js";
 
@@ -155,7 +153,8 @@ const stockCompatibleCases: Record<string, string> = {
 
 for (const [name, value] of Object.entries(stockCompatibleCases)) {
   test(`matches stock remark-gfm: ${name}`, function () {
-    assert.deepEqual(stripPositions(parseWikiGfm(value)), stripPositions(parseStockGfm(value)));
+    // Full trees, positions included: the wiki attempt must leave no trace.
+    assert.deepEqual(parseWikiGfm(value), parseStockGfm(value));
   });
 }
 
@@ -202,7 +201,7 @@ for (const order of ["wikilink-then-gfm", "gfm-then-wikilink"] as const) {
         : unified().use(remarkParse).use(remarkGfm).use(remarkWikilink);
     const tree = parseToRoot(processor, aliasInTable);
 
-    assert.deepEqual(stripPositions(tree), stripPositions(parseStockGfm(aliasInTable)));
+    assert.deepEqual(tree, parseStockGfm(aliasInTable));
 
     const body = row(theTable(tree), 1);
     assert.equal(body.children.length, 3);
@@ -217,48 +216,15 @@ test("the preset stays wiki-aware even with stock remark-gfm registered before i
   assert.equal(cell(body, 0).children[0].type, "wikiLink");
 });
 
-test("documented failure: stock remark-gfm AFTER the preset splits the cell and warns", function () {
-  const file = unified()
-    .use(remarkParse)
-    .use(remarkStringify)
-    .use(remarkGfmWithWikilink)
-    .use(remarkGfm)
-    .processSync(aliasInTable);
-
-  // The re-registered stock table construct takes precedence again…
+test("documented failure: stock remark-gfm AFTER the preset splits the cell", function () {
+  // The re-registered stock table construct takes precedence again; the
+  // result is identical to plain stock GFM.
   const tree = parseToRoot(
     unified().use(remarkParse).use(remarkGfmWithWikilink).use(remarkGfm),
     aliasInTable,
   );
+  assert.deepEqual(tree, parseStockGfm(aliasInTable));
   assert.equal(row(theTable(tree), 1).children.length, 3);
-
-  // …and the preset's transformer reports it instead of staying silent.
-  assert.equal(file.messages.length, 1);
-  assert.equal(file.messages[0].source, "remark-wikilink");
-  assert.equal(file.messages[0].ruleId, "table-precedence");
-  assert.match(String(file.messages[0].reason), /split across table cells/);
-});
-
-test("the misconfiguration warning never fires on correct preset usage", function () {
-  const documents = [
-    aliasInTable,
-    // Rollbacks leave an unclosed opener behind, but no closing neighbor.
-    ["| a | b |", "| --- | --- |", "| [[unfinished | x |", ""].join("\n"),
-    // A genuinely failed span (bracket in the target) splits the cell, but
-    // its opener tail contains a bracket, so it does not look like a link
-    // that was cut at a pipe.
-    ["| a | b |", "| --- | --- |", "| [[x[y | z]] |", ""].join("\n"),
-    "no tables at all with [[Note|label]]",
-  ];
-
-  for (const value of documents) {
-    const file = unified()
-      .use(remarkParse)
-      .use(remarkStringify)
-      .use(remarkGfmWithWikilink)
-      .processSync(value);
-    assert.deepEqual(file.messages, [], JSON.stringify(value));
-  }
 });
 
 test("a backslash before an ordinary character inside a wiki span", function () {

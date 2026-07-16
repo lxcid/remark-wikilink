@@ -69,8 +69,7 @@
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
-    "unified": "^11.0.5",
-    "unist-util-visit": "^5.1.0"
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

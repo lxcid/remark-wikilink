@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Paragraph } from "mdast";
 import type { WikiEmbed, WikiLink } from "@lxcid/remark-wikilink";
-import { parseStock, parseWiki, signature, stripPositions } from "./util.js";
+import { parseStock, parseWiki, signature } from "./util.js";
 
 function theParagraph(value: string): Paragraph {
   const tree = parseWiki(value);
@@ -198,7 +198,7 @@ for (const [name, value] of Object.entries(invalidCases)) {
     const tree = parseWiki(value);
     assert.equal(JSON.stringify(tree).includes("wikiLink"), false);
     assert.equal(JSON.stringify(tree).includes("wikiEmbed"), false);
-    assert.deepEqual(stripPositions(tree), stripPositions(parseStock(value)));
+    assert.deepEqual(tree, parseStock(value));
   });
 }
 

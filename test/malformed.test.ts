@@ -4,15 +4,7 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  cell,
-  parseStockGfm,
-  parseWikiGfm,
-  row,
-  signature,
-  stripPositions,
-  theTable,
-} from "./util.js";
+import { cell, parseStockGfm, parseWikiGfm, row, signature, theTable } from "./util.js";
 
 const rollbackTables: Record<string, string> = {
   "unfinished wiki link in a cell": ["| a | b |", "| --- | --- |", "| [[unfinished | x |", ""].join(
@@ -58,7 +50,9 @@ for (const [name, value] of Object.entries(rollbackTables)) {
     const ours = parseWikiGfm(value);
     const stock = parseStockGfm(value);
 
-    assert.deepEqual(stripPositions(ours), stripPositions(stock));
+    // Full trees, positions included: the failed attempt must not consume
+    // input or shift a single offset.
+    assert.deepEqual(ours, stock);
 
     // Also prove the failed attempt did not swallow input or change the
     // cell count.
@@ -93,6 +87,6 @@ const rollbackParagraphs: Record<string, string> = {
 
 for (const [name, value] of Object.entries(rollbackParagraphs)) {
   test(`paragraph rollback matches stock GFM: ${name}`, function () {
-    assert.deepEqual(stripPositions(parseWikiGfm(value)), stripPositions(parseStockGfm(value)));
+    assert.deepEqual(parseWikiGfm(value), parseStockGfm(value));
   });
 }
