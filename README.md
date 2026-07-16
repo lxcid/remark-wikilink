@@ -177,14 +177,11 @@ link in a table gets chopped in half before the inline parser ever sees it.
 
 ### Why a preset instead of plugin ordering
 
-When two constructs compete for the same input, micromark tries the one
-registered **last** first — and registration order comes from the `.use()`
-chain, i.e. user code, not this package. If the default plugin shipped the
-wiki-aware table construct, `.use(remarkGfm).use(remarkWikilink)` would work
-while the reverse order silently split cells: same plugins, different trees.
-Rather than ship that trap, the default plugin has no table construct at
-all, and the preset owns the order internally — `remark-gfm` first,
-`gfmTable()` last, every time.
+micromark picks between competing table parsers by registration order: the
+last one registered wins. That order comes from your `.use()` chain, so two
+separate plugins would work in one order and silently break in the other.
+The preset removes the gamble by owning the order itself — `remark-gfm`
+first, `gfmTable()` last, always.
 
 ### What the preset registers, and why shadowing is safe
 
