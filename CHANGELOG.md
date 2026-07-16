@@ -1,5 +1,13 @@
 # @lxcid/remark-wikilink
 
+## 0.1.1
+
+### Patch Changes
+
+- 0ede741: Preserve parser-produced trailing target backslashes and backslash-pipe
+  aliases when serializing wiki links and embeds, both inside and outside GFM
+  tables.
+
 ## 0.1.0
 
 ### Minor Changes
