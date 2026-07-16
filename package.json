@@ -1,6 +1,6 @@
 {
   "name": "@lxcid/remark-wikilink",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "remark plugin for Obsidian-style wiki links that understands [[target|alias]] before GFM table pipes are classified",
   "keywords": [
     "gfm",
