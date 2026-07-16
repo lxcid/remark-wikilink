@@ -95,15 +95,13 @@ import { wikilinkHandlers } from "@lxcid/remark-wikilink";
 > silently reverts table behavior. Both failure modes are deterministic and
 > covered by tests; the reasons are in [Design](#design).
 
-Configuration — any options you previously passed to `remark-gfm` must move
-into the preset's `gfm` key (see
-[sharp edges](#sharp-edges-when-mixing-with-remark-gfm)); URL resolution is
+The preset accepts the same options as `remark-gfm`. URL resolution is
 configured on the handlers, at the rendering layer:
 
 ```ts
 unified()
   .use(remarkParse)
-  .use(remarkGfmWithWikilink, { gfm: { singleTilde: false } })
+  .use(remarkGfmWithWikilink, { singleTilde: false })
   .use(remarkRehype, {
     handlers: wikilinkHandlers({
       resolveHref(reference) {
@@ -212,9 +210,7 @@ construct and avoids even that.
 Because precedence follows registration order, anything registered *after*
 the preset that brings its own table construct — `remark-gfm` itself, or a
 plugin wrapping it — silently overrides the wiki-aware behavior, and aliased
-cells split again (a deterministic failure, pinned by tests). Also:
-configure GFM through the preset's `{gfm: …}` key — options set on a
-separate `.use(remarkGfm)` don't apply.
+cells split again (a deterministic failure, pinned by tests).
 
 ## API
 

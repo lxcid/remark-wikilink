@@ -117,7 +117,7 @@ test("exposes the lower-level pieces as named exports", function () {
 test("the preset forwards gfm options; handlers take resolveHref", async function () {
   const file = await unified()
     .use(remarkParse)
-    .use(remarkGfmWithWikilink, { gfm: { singleTilde: false } })
+    .use(remarkGfmWithWikilink, { singleTilde: false })
     .use(remarkRehype, {
       handlers: wikilinkHandlers({
         resolveHref(reference) {

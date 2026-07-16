@@ -22,18 +22,7 @@ import type { Processor } from "unified";
 import remarkWikilink from "./index.js";
 import { gfmTable } from "./table-syntax.js";
 
-/**
- * Configuration for `@lxcid/remark-wikilink/gfm`.
- *
- * HTML rendering is configured separately — pass `wikilinkHandlers()` to
- * `remark-rehype`, not to this preset.
- */
-export interface Options {
-  /**
-   * Configuration passed to `remark-gfm`.
-   */
-  gfm?: Readonly<GfmOptions> | null | undefined;
-}
+export type Options = GfmOptions;
 
 /**
  * Add support for GFM (autolink literals, footnotes, strikethrough, tasklists)
@@ -47,7 +36,7 @@ export default function remarkGfmWithWikilink(
   options?: Readonly<Options> | null | undefined,
 ): undefined {
   const self = this as Processor<Root>;
-  remarkGfm.call(self, options?.gfm ?? undefined);
+  remarkGfm.call(self, options);
   remarkWikilink.call(self);
 
   const data = self.data();
