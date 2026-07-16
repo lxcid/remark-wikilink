@@ -1,5 +1,5 @@
 ---
-"@lxcid/remark-wikilink": major
+"@lxcid/remark-wikilink": minor
 ---
 
 Initial release: Obsidian-style wiki links (`[[target|alias]]`) and embeds
