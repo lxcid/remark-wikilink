@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import remarkWikilink, { type WikiEmbed, type WikiLink } from "@lxcid/remark-wikilink";
-import remarkWikilinkGfm from "@lxcid/remark-wikilink/gfm";
+import remarkGfmWithWikilink from "@lxcid/remark-wikilink/gfm";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
@@ -210,7 +210,7 @@ for (const order of ["wikilink-then-gfm", "gfm-then-wikilink"] as const) {
 }
 
 test("the preset stays wiki-aware even with stock remark-gfm registered before it", function () {
-  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkWikilinkGfm);
+  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkGfmWithWikilink);
   const tree = parseToRoot(processor, aliasInTable);
   const body = row(theTable(tree), 1);
   assert.equal(body.children.length, 2);
@@ -221,13 +221,13 @@ test("documented failure: stock remark-gfm AFTER the preset splits the cell and 
   const file = unified()
     .use(remarkParse)
     .use(remarkStringify)
-    .use(remarkWikilinkGfm)
+    .use(remarkGfmWithWikilink)
     .use(remarkGfm)
     .processSync(aliasInTable);
 
   // The re-registered stock table construct takes precedence again…
   const tree = parseToRoot(
-    unified().use(remarkParse).use(remarkWikilinkGfm).use(remarkGfm),
+    unified().use(remarkParse).use(remarkGfmWithWikilink).use(remarkGfm),
     aliasInTable,
   );
   assert.equal(row(theTable(tree), 1).children.length, 3);
@@ -255,7 +255,7 @@ test("the misconfiguration warning never fires on correct preset usage", functio
     const file = unified()
       .use(remarkParse)
       .use(remarkStringify)
-      .use(remarkWikilinkGfm)
+      .use(remarkGfmWithWikilink)
       .processSync(value);
     assert.deepEqual(file.messages, [], JSON.stringify(value));
   }

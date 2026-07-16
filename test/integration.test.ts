@@ -14,7 +14,7 @@ import remarkWikilink, {
   gfmTable,
   wikilinkToMarkdown,
 } from "@lxcid/remark-wikilink";
-import remarkWikilinkGfm from "@lxcid/remark-wikilink/gfm";
+import remarkGfmWithWikilink from "@lxcid/remark-wikilink/gfm";
 
 const tableDocument = [
   "| Source | Status |",
@@ -26,7 +26,7 @@ const tableDocument = [
 test("renders to HTML through remark-rehype", async function () {
   const file = await unified()
     .use(remarkParse)
-    .use(remarkWikilinkGfm)
+    .use(remarkGfmWithWikilink)
     .use(remarkRehype)
     .use(rehypeStringify)
     .process(tableDocument);
@@ -56,7 +56,7 @@ test("renders paragraphs and embeds through remark-rehype", async function () {
 test("works with react-markdown", function () {
   const html = renderToStaticMarkup(
     createElement(Markdown, {
-      remarkPlugins: [remarkWikilinkGfm],
+      remarkPlugins: [remarkGfmWithWikilink],
       children: tableDocument,
     }),
   );
@@ -85,7 +85,7 @@ test("exposes the lower-level pieces as named exports", function () {
 test("the preset forwards options to remark-gfm and remark-wikilink", async function () {
   const file = await unified()
     .use(remarkParse)
-    .use(remarkWikilinkGfm, {
+    .use(remarkGfmWithWikilink, {
       gfm: { singleTilde: false },
       wikilink: {
         resolveHref(reference) {

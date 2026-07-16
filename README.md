@@ -66,15 +66,15 @@ With GFM tables, use the `gfm` preset **in place of** `remark-gfm` (it applies
 
 ```ts
 import remarkParse from "remark-parse";
-import remarkWikilinkGfm from "@lxcid/remark-wikilink/gfm";
+import remarkGfmWithWikilink from "@lxcid/remark-wikilink/gfm";
 import { unified } from "unified";
 
-const processor = unified().use(remarkParse).use(remarkWikilinkGfm);
+const processor = unified().use(remarkParse).use(remarkGfmWithWikilink);
 ```
 
 ```tsx
 // react-markdown works the same way:
-<Markdown remarkPlugins={[remarkWikilinkGfm]}>{markdown}</Markdown>
+<Markdown remarkPlugins={[remarkGfmWithWikilink]}>{markdown}</Markdown>
 ```
 
 > [!IMPORTANT]
@@ -92,7 +92,7 @@ which must move into the preset's `gfm` key (see
 ```ts
 unified()
   .use(remarkParse)
-  .use(remarkWikilinkGfm, {
+  .use(remarkGfmWithWikilink, {
     gfm: { singleTilde: false }, // forwarded to remark-gfm
     wikilink: {
       resolveHref(reference) {
@@ -238,7 +238,7 @@ covered by tests:
 
 The default export of `@lxcid/remark-wikilink` is the remark plugin
 `remarkWikilink`. The default export of `@lxcid/remark-wikilink/gfm` is the
-preset `remarkWikilinkGfm`.
+preset `remarkGfmWithWikilink`.
 
 Lower-level pieces are named exports, so micromark and mdast users are not
 forced through remark:

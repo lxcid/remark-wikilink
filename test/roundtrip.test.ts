@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import remarkWikilink from "@lxcid/remark-wikilink";
-import remarkWikilinkGfm from "@lxcid/remark-wikilink/gfm";
+import remarkGfmWithWikilink from "@lxcid/remark-wikilink/gfm";
 import type { Root } from "mdast";
 import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
@@ -10,7 +10,7 @@ import { parseToRoot, signature, stripPositions } from "./util.js";
 
 const plain = unified().use(remarkParse).use(remarkStringify).use(remarkWikilink);
 
-const gfm = unified().use(remarkParse).use(remarkStringify).use(remarkWikilinkGfm);
+const gfm = unified().use(remarkParse).use(remarkStringify).use(remarkGfmWithWikilink);
 
 function stringify(processor: { stringify(tree: Root): unknown }, tree: Root): string {
   return String(processor.stringify(tree));

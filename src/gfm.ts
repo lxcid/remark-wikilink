@@ -23,12 +23,12 @@ import type { Processor, Transformer } from "unified";
 import { visit } from "unist-util-visit";
 import remarkWikilink from "./index.js";
 import { gfmTable } from "./table-syntax.js";
-import type { Options } from "./types.js";
+import type { Options as WikilinkOptions } from "./types.js";
 
 /**
  * Configuration for `remark-wikilink/gfm`.
  */
-export interface WikilinkGfmOptions {
+export interface Options {
   /**
    * Configuration passed to `remark-gfm`.
    */
@@ -36,7 +36,7 @@ export interface WikilinkGfmOptions {
   /**
    * Configuration passed to `remark-wikilink`.
    */
-  wikilink?: Readonly<Options> | null | undefined;
+  wikilink?: Readonly<WikilinkOptions> | null | undefined;
 }
 
 /**
@@ -60,9 +60,9 @@ const splitCloser = /^[^[\]]*\]\]/;
  * @param options
  *   Configuration (optional).
  */
-export default function remarkWikilinkGfm(
+export default function remarkGfmWithWikilink(
   this: unknown,
-  options?: Readonly<WikilinkGfmOptions> | null | undefined,
+  options?: Readonly<Options> | null | undefined,
 ): Transformer<Root> {
   const self = this as Processor<Root>;
   remarkGfm.call(self, options?.gfm ?? undefined);
@@ -112,4 +112,4 @@ function cellEdgeText(cell: TableCell, edge: "head" | "tail"): string {
   return child && child.type === "text" ? child.value : "";
 }
 
-export { remarkWikilinkGfm };
+export { remarkGfmWithWikilink };
