@@ -45,6 +45,7 @@ function inTableCell(stack: ReadonlyArray<string>): boolean {
 }
 
 function serializeWikiSpan(node: WikiEmbed | WikiLink, escapePipes: boolean): string {
+  assertRepresentable(node);
   const divider = escapePipes ? "\\|" : "|";
   let value = "[[" + node.target;
 
@@ -53,4 +54,35 @@ function serializeWikiSpan(node: WikiEmbed | WikiLink, escapePipes: boolean): st
   }
 
   return value + "]]";
+}
+
+/**
+ * Throw when a node cannot round-trip through the wiki grammar — brackets,
+ * pipes in the target, line endings, or untrimmed fields would all reparse
+ * as a different node (or none). A clear contract failure beats silently
+ * corrupted output; there is deliberately no extra escaping grammar.
+ */
+function assertRepresentable(node: WikiEmbed | WikiLink): undefined {
+  const label = node.type === "wikiEmbed" ? "wiki embed" : "wiki link";
+  check(!/[[\]|]/.test(node.target), "a pipe or bracket in `target`");
+  check(!/[\r\n]/.test(node.target), "a line ending in `target`");
+  check(node.target === node.target.replace(/^[\t ]+|[\t ]+$/g, ""), "an untrimmed `target`");
+  check(node.target !== "", "an empty `target`");
+
+  if (node.alias !== null) {
+    check(!/[[\]]/.test(node.alias), "a bracket in `alias`");
+    check(!/[\r\n]/.test(node.alias), "a line ending in `alias`");
+    check(node.alias === node.alias.replace(/^[\t ]+|[\t ]+$/g, ""), "an untrimmed `alias`");
+    // Parsing unescapes `\|` to `|`, so a literal backslash-pipe sequence
+    // cannot survive a round trip.
+    check(!node.alias.includes("\\|"), "a `\\|` sequence in `alias`");
+  }
+
+  function check(valid: boolean, reason: string): undefined {
+    if (!valid) {
+      throw new Error(
+        "Cannot serialize " + label + " with " + reason + ": it would not reparse as the same node",
+      );
+    }
+  }
 }

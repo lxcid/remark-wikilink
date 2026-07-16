@@ -17,13 +17,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+      # No `registry-url` here: it would point npm's userconfig at a file
+      # that reads the unset NODE_AUTH_TOKEN, superseding the ~/.npmrc the
+      # changesets action writes from NPM_TOKEN and breaking authentication.
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: pnpm
-          registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      # Validate the tarball in this job, not just in the concurrent CI
+      # workflow, so a publish can never race ahead of the check.
+      - run: pnpm run check-pack
       # Opens/updates a "Version Packages" PR when changesets are pending;
       # publishes to npm (with provenance, per publishConfig) once that PR
       # merges. Requires an NPM_TOKEN repository secret from a 2FA-enabled

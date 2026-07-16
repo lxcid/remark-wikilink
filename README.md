@@ -178,10 +178,12 @@ link in a table gets chopped in half before the inline parser ever sees it.
 ### Why a preset instead of plugin ordering
 
 micromark picks between competing table parsers by registration order: the
-last one registered wins. That order comes from your `.use()` chain, so two
-separate plugins would work in one order and silently break in the other.
-The preset removes the gamble by owning the order itself — `remark-gfm`
-first, `gfmTable()` last, always.
+last one registered wins, and that order comes from your `.use()` chain. If
+the default plugin shipped the table construct, tables would work in one
+`.use()` order and silently break in the other — so it deliberately ships
+none, and independent plugins fail the same, tested way in both orders. The
+preset removes the gamble by owning the order itself — `remark-gfm` first,
+`gfmTable()` last, always.
 
 ### What the preset registers, and why shadowing is safe
 
@@ -241,8 +243,10 @@ toMarkdownExtensions.push(gfmTableToMarkdown(), wikilinkToMarkdown());
   reference (`{target, alias, embed}`) into the `href` used in the default
   hast data. The parser performs **no filesystem access**; resolution
   strategy (shortest path, slugs, routing) is entirely the consumer’s. The
-  default percent-encodes the target as a relative URL, keeping the first `#`
-  as the anchor separator.
+  default percent-encodes the target, keeping the first `#` as the anchor
+  separator (a trailing `#` with no anchor is dropped). It does **no**
+  sanitization — a target like `javascript:x` or `//host` passes through, so
+  override `resolveHref` when rendering untrusted input.
 
 ## Syntax
 
@@ -286,8 +290,10 @@ alias     ::= 1*( char - "[" - "]" - lineEnding )         ; may contain "|"
   table cells are written as `\|`; elsewhere as `|`.
 - **Empty alias** (`[[a|]]`) is valid and distinct from no alias: `alias` is
   `""`, and display text falls back to the target.
-- **Trimming**: `target` and `alias` are trimmed (`[[ a | b ]]` → `a`, `b`);
-  positions on the node still cover the raw span.
+- **Trimming**: `target` and `alias` are trimmed of spaces and tabs only
+  (`[[ a | b ]]` → `a`, `b`); positions on the node still cover the raw
+  span. Other Unicode whitespace (NBSP, em-space, …) counts as content, so
+  it is preserved and can never produce an empty target.
 - **No nesting, no line endings**: `[`, `]` cannot appear inside a span, and
   the closing `]]` must be on the same line. Anything else stays literal.
 - **Escapes win**: `\[[not a link]]` never becomes a wiki link — in
@@ -295,11 +301,15 @@ alias     ::= 1*( char - "[" - "]" - lineEnding )         ; may contain "|"
 - **Embeds** (`![[…]]`) produce a distinct `wikiEmbed` node. Rendering
   (image/audio/video/PDF transclusion) is the consumer’s job; the default
   hast data renders an anchor tagged `wiki-embed`.
-- **Documented deviation**: inside table rows, a complete wiki span is opaque
-  even within a code span (``| `[[a|b]]` |`` stays one cell, while stock
-  GFM splits it — GFM’s own spec lets raw pipes split code spans). Outside
-  this one case, tables without wiki spans parse byte-for-byte identically
-  to stock `remark-gfm`, which is enforced by structural-equality tests.
+- **Documented deviation — protection is shape-level**: the table row
+  scanner runs before inline context exists, so it protects every complete
+  `[[…|…]]` byte shape in a cell, wherever it appears — inside code spans
+  (``| `[[a|b]]` |``), HTML comments (`<!-- [[a|b]] -->`), raw HTML
+  attributes, and link destinations. Stock GFM splits all of these at the
+  pipe (its spec lets raw pipes split even code spans); this package keeps
+  each one cell. All four contexts are pinned by tests. Outside wiki-shaped
+  spans, tables parse byte-for-byte identically to stock `remark-gfm`,
+  enforced by full-tree equality tests.
 
 ## mdast nodes
 

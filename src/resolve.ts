@@ -3,13 +3,16 @@ import type { WikiReference } from "./types.js";
 /**
  * Default `href` resolver.
  *
- * Percent-encodes the target as a relative URL, keeping the first `#` as the
- * anchor separator: `[[analysis/profile#Business profile]]` becomes
- * `analysis/profile#Business%20profile`.
+ * Percent-encodes the target, keeping the first `#` as the anchor separator:
+ * `[[analysis/profile#Business profile]]` becomes
+ * `analysis/profile#Business%20profile`. A trailing `#` with no anchor text
+ * is dropped.
  *
- * There is intentionally no filesystem access, slugging, or extension
- * handling here; pass {@linkcode Options.resolveHref} to integrate with your
- * application’s routing.
+ * The result is used verbatim — there is intentionally no filesystem access,
+ * slugging, extension handling, or sanitization here (a target like
+ * `javascript:x` or `//host` passes through). Pass
+ * {@linkcode Options.resolveHref} to integrate with your application’s
+ * routing, and to sanitize when rendering untrusted input.
  */
 export function defaultResolveHref(reference: WikiReference): string {
   const target = reference.target;

@@ -172,6 +172,22 @@ test("documented deviation: wiki-looking code span in a cell is protected", func
   assert.equal(signature(cell(body, 0)), 'tableCell [inlineCode "[[x|y]]"]');
 });
 
+// Protection is shape-level: the row scanner runs before inline context
+// exists, so every complete wiki shape keeps its pipes even where inline
+// parsing will not produce a wiki link. Stock GFM splits each at the pipe.
+const shapeProtectedCases: Record<string, string> = {
+  "an HTML comment": ["| a |", "| --- |", "| <!-- [[x|y]] --> |", ""].join("\n"),
+  "a raw HTML attribute": ["| a |", "| --- |", '| <span title="[[x|y]]">z</span> |', ""].join("\n"),
+  "a link destination": ["| a |", "| --- |", "| [z](dest[[x|y]]) |", ""].join("\n"),
+};
+
+for (const [name, value] of Object.entries(shapeProtectedCases)) {
+  test(`documented deviation: shape-level protection inside ${name}`, function () {
+    assert.equal(row(theTable(parseStockGfm(value)), 1).children.length, 2);
+    assert.equal(row(theTable(parseWikiGfm(value)), 1).children.length, 1);
+  });
+}
+
 test("escaped divider inside a table cell ([[a\\|b]])", function () {
   const tree = parseWikiGfm(["| a |", "| --- |", "| [[analysis/x\\|Alias]] |", ""].join("\n"));
   const body = row(theTable(tree), 1);

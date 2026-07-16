@@ -81,6 +81,40 @@ test("keeps plain dividers outside tables", function () {
   assert.equal(String(plain.processSync("[[a|b]]\n")), "[[a|b]]\n");
 });
 
+// The serializer refuses nodes the wiki grammar cannot represent: silently
+// emitting text that reparses as a different node would be corruption.
+const unrepresentableNodes: Record<string, { target: string; alias: string | null }> = {
+  "pipe in target": { target: "a|b", alias: null },
+  "bracket in target": { target: "a]b", alias: null },
+  "line ending in target": { target: "a\nb", alias: null },
+  "empty target": { target: "", alias: null },
+  "untrimmed target": { target: " a", alias: null },
+  "bracket in alias": { target: "a", alias: "x]y" },
+  "line ending in alias": { target: "a", alias: "x\ny" },
+  "untrimmed alias": { target: "a", alias: "x " },
+  "backslash-pipe in alias": { target: "a", alias: "x\\|y" },
+};
+
+for (const [name, fields] of Object.entries(unrepresentableNodes)) {
+  test(`throws on unrepresentable node: ${name}`, function () {
+    const tree: Root = {
+      type: "root",
+      children: [{ type: "paragraph", children: [{ type: "wikiLink", ...fields }] }],
+    };
+    assert.throws(() => stringify(plain, tree), /Cannot serialize wiki link/);
+  });
+}
+
+test("throws on unrepresentable embeds too", function () {
+  const tree: Root = {
+    type: "root",
+    children: [
+      { type: "paragraph", children: [{ type: "wikiEmbed", target: "a|b", alias: null }] },
+    ],
+  };
+  assert.throws(() => stringify(plain, tree), /Cannot serialize wiki embed/);
+});
+
 test("full parse–stringify–parse fixpoint for a mixed document", function () {
   const source = [
     "# Notes",

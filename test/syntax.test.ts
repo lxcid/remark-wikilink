@@ -110,6 +110,17 @@ test("trims target and alias ([[ a | b ]])", function () {
   assert.equal(node.alias, "b");
 });
 
+test("unicode whitespace is content, never an empty target", function () {
+  // Only spaces and tabs trim; NBSP, em-space, and BOM are legal target
+  // characters, so they survive and cannot produce `target: ""`.
+  for (const char of [" ", " ", "﻿"]) {
+    const node = soleWikiLink(`[[${char}]]`);
+    assert.equal(node.target, char, JSON.stringify(char));
+    const padded = soleWikiLink(`[[ ${char}x ]]`);
+    assert.equal(padded.target, `${char}x`, JSON.stringify(char));
+  }
+});
+
 test("works in headings, lists, and block quotes", function () {
   const tree = parseWiki("# See [[Note]]\n\n- [[Item|label]]\n\n> ![[Quote]]\n");
   assert.equal(

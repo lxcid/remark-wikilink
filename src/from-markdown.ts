@@ -75,7 +75,7 @@ function enterWikiEmbed(this: CompileContext, token: Token): undefined {
 
 function exitWikiLinkTarget(this: CompileContext, token: Token): undefined {
   const node = currentWikiNode(this);
-  node.target = this.sliceSerialize(token).trim();
+  node.target = trimMarkdownSpace(this.sliceSerialize(token));
 }
 
 function exitWikiLinkAliasMarker(this: CompileContext, _token: Token): undefined {
@@ -90,7 +90,17 @@ function exitWikiLinkAliasMarker(this: CompileContext, _token: Token): undefined
 function exitWikiLinkAlias(this: CompileContext, token: Token): undefined {
   const node = currentWikiNode(this);
   // `\|` in an alias is a literal pipe (Obsidian table escape).
-  node.alias = this.sliceSerialize(token).replaceAll("\\|", "|").trim();
+  node.alias = trimMarkdownSpace(this.sliceSerialize(token).replaceAll("\\|", "|"));
+}
+
+/**
+ * Trim spaces and tabs only. JavaScript's `.trim()` also strips NBSP,
+ * em-space, and similar characters — which the tokenizer counts as target
+ * *content* — and would turn a valid Unicode-whitespace target into a
+ * forbidden empty one.
+ */
+function trimMarkdownSpace(value: string): string {
+  return value.replace(/^[\t ]+|[\t ]+$/g, "");
 }
 
 function currentWikiNode(context: CompileContext): WikiEmbed | WikiLink {
