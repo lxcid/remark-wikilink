@@ -20,6 +20,7 @@ pnpm run check-pack
   `micromark-extension-gfm-table` (keep the wiki-span grammar in sync with
   `syntax.ts`; see the header comments and `THIRD_PARTY_NOTICES.md`)
 - `src/from-markdown.ts` / `src/to-markdown.ts` — mdast bridges
+- `src/to-hast.ts` — hast rendering handlers for `remark-rehype`
 - `src/index.ts` — the remark plugin; `src/gfm.ts` — the
   `@lxcid/remark-wikilink/gfm` preset
 - `test/` — run with `node --test`, compiled by `tsc`, importing the built

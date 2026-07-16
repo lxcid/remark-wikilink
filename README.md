@@ -314,8 +314,8 @@ alias     ::= 1*( char - "[" - "]" - lineEnding )         ; may contain "|"
 - **Escapes win**: `\[[not a link]]` never becomes a wiki link — in
   paragraphs and in table rows.
 - **Embeds** (`![[…]]`) produce a distinct `wikiEmbed` node. Rendering
-  (image/audio/video/PDF transclusion) is the consumer’s job; the default
-  hast data renders an anchor tagged `wiki-embed`.
+  (image/audio/video/PDF transclusion) is the consumer’s job; the handlers
+  render an anchor tagged `wiki-embed`.
 - **Documented deviation — protection is shape-level**: the table row
   scanner runs before inline context exists, so it protects every complete
   `[[…|…]]` byte shape in a cell, wherever it appears — inside code spans
@@ -364,8 +364,10 @@ Rendering is a separate, explicit layer: pass `wikilinkHandlers()` to
 ```
 
 The handlers read the node's live `target`/`alias` at conversion time, so
-they always agree with your transforms. Without handlers, wiki nodes render
-as nothing — rendering is opt-in by design. Override `resolveHref` to
+they always agree with your transforms. **The handlers are required for
+usable HTML**: without them, `mdast-util-to-hast`'s unknown-node fallback
+replaces each wiki node with an empty `<div>` — the link text is lost and
+the markup is invalid inside a paragraph. Override `resolveHref` to
 integrate with your router or vault resolver.
 
 ## Comparison with other wiki-link plugins

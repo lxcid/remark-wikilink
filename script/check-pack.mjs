@@ -29,6 +29,8 @@ const required = [
   "dist/table-syntax.js",
   "dist/from-markdown.js",
   "dist/to-markdown.js",
+  "dist/to-hast.js",
+  "dist/to-hast.d.ts",
   "dist/dev/index.js",
   "dist/dev/gfm.js",
 ];
