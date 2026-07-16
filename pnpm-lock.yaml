@@ -44,6 +44,9 @@ importers:
       unified:
         specifier: ^11.0.5
         version: 11.0.5
+      unist-util-visit:
+        specifier: ^5.1.0
+        version: 5.1.0
     devDependencies:
       '@changesets/cli':
         specifier: ^2.31.0
@@ -93,9 +96,6 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
-      unist-util-visit:
-        specifier: ^5.1.0
-        version: 5.1.0
 
 packages:
 

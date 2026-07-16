@@ -219,10 +219,15 @@ deliberately never touches.
 Both follow directly from shadowing-by-registration-order, and both are
 covered by tests:
 
-- **`.use(remarkGfm)` after the preset silently un-fixes tables.** It
-  registers an even newer stock table construct that outruns ours, and
-  aliased cells split again with no error. Don't add `remark-gfm` yourself;
-  if a framework injects it, make sure the preset comes later.
+- **`.use(remarkGfm)` after the preset un-fixes tables.** It registers an
+  even newer stock table construct that outruns ours, and aliased cells
+  split again. To keep that from being *silent* data corruption, the preset
+  ships a transformer that detects a wiki link cut at a pipe (an unclosed
+  `[[…` opener in one cell with its `…]]` closer in the next) and emits a
+  file warning (`remark-wikilink:table-precedence`) pointing at the
+  misconfiguration; it never fires on correct usage, including legitimate
+  rollbacks. Don't add `remark-gfm` yourself; if a framework injects it,
+  make sure the preset comes later.
 - **gfm options on a separate `remark-gfm` are silently shadowed.** The
   preset applies its own copy of `remark-gfm`, and the later registration
   wins at parse time — e.g. a user's `.use(remarkGfm, {singleTilde: false})`
