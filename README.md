@@ -177,14 +177,36 @@ link in a table gets chopped in half before the inline parser ever sees it.
 
 ### Why a preset instead of plugin ordering
 
-micromark tries same-hook constructs in *reverse registration order*: the
-latest-registered extension is attempted first. Two independent plugins can
-therefore never guarantee that the wiki-aware table construct outranks the
-stock one in users' hands — with `.use(remarkWikilink)` + `.use(remarkGfm)`,
-the stock table wins in **both** orders (the default plugin deliberately
-registers no table construct rather than behave order-dependently). The
-preset exists to own that ordering: it is the one place that can register the
-wiki-aware construct *after* GFM's, deterministically, every time.
+When two syntax extensions both want to parse the same thing — here, the
+stock table construct and the wiki-aware one — micromark has a simple
+tie-breaker: **the construct registered last is tried first**, and the first
+one to succeed wins.
+
+Who registers last? Whichever plugin appears later in the `.use()` chain.
+That is the problem: the winner is decided by plugin order in *user* code
+(or in a framework's code), not by anything this package controls.
+
+If `remark-wikilink` itself shipped the wiki-aware table construct, the same
+two plugins would produce different trees depending on order:
+
+```ts
+unified().use(remarkGfm).use(remarkWikilink);
+// wiki construct registered last → tried first → tables work
+
+unified().use(remarkWikilink).use(remarkGfm);
+// stock construct registered last → tried first → aliased cells silently split
+```
+
+A parser whose output flips on `.use()` order is a debugging trap. So the
+default plugin deliberately ships **no** table construct at all: combined
+with `remark-gfm` it behaves identically in both orders (wiki links work
+everywhere; aliased links inside tables split, matching stock GFM — the
+tested failure mode above).
+
+The preset is the fix: inside a single plugin, registration order is code,
+not user configuration. `remarkGfmWithWikilink` always applies `remark-gfm`
+first and registers the wiki-aware `gfmTable()` last, so the right
+precedence is guaranteed on every run, for every user.
 
 ### What the preset registers, and why shadowing is safe
 
