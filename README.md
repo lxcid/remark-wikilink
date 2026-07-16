@@ -199,10 +199,10 @@ construct and avoids even that.
 Because precedence follows registration order, anything registered *after*
 the preset that brings its own table construct — `remark-gfm` itself, or a
 plugin wrapping it — overrides the wiki-aware behavior, and aliased cells
-split again. The preset detects that signature and emits a file warning
-(`remark-wikilink:table-precedence`) instead of staying silent. For the same
-reason, options on a separate `.use(remarkGfm)` are ignored — pass them
-through the preset's `{gfm: …}` key. Both cases are covered by tests.
+split again; when that happens the preset emits a file warning
+(`remark-wikilink:table-precedence`) instead of staying silent. Also:
+configure GFM through the preset's `{gfm: …}` key — options set on a
+separate `.use(remarkGfm)` don't apply.
 
 ## API
 
