@@ -1,5 +1,19 @@
 # @lxcid/remark-wikilink
 
+## 0.2.0
+
+### Minor Changes
+
+- 9eb88a0: Accept `remark-gfm` options directly in the `/gfm` preset instead of under a
+  `gfm` property.
+
+### Patch Changes
+
+- 2051de1: Expose wiki node types and mdast module augmentations from the `/gfm` entry
+  point.
+- 6524765: Clarify the stock GFM compatibility boundary and how live node fields interact
+  with explicit mdast rendering data.
+
 ## 0.1.1
 
 ### Patch Changes
