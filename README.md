@@ -177,84 +177,35 @@ link in a table gets chopped in half before the inline parser ever sees it.
 
 ### Why a preset instead of plugin ordering
 
-When two syntax extensions both want to parse the same thing — here, the
-stock table construct and the wiki-aware one — micromark has a simple
-tie-breaker: **the construct registered last is tried first**, and the first
-one to succeed wins.
-
-Who registers last? Whichever plugin appears later in the `.use()` chain.
-That is the problem: the winner is decided by plugin order in *user* code
-(or in a framework's code), not by anything this package controls.
-
-If `remark-wikilink` itself shipped the wiki-aware table construct, the same
-two plugins would produce different trees depending on order:
-
-```ts
-unified().use(remarkGfm).use(remarkWikilink);
-// wiki construct registered last → tried first → tables work
-
-unified().use(remarkWikilink).use(remarkGfm);
-// stock construct registered last → tried first → aliased cells silently split
-```
-
-A parser whose output flips on `.use()` order is a debugging trap. So the
-default plugin deliberately ships **no** table construct at all: combined
-with `remark-gfm` it behaves identically in both orders (wiki links work
-everywhere; aliased links inside tables split, matching stock GFM — the
-tested failure mode above).
-
-The preset is the fix: inside a single plugin, registration order is code,
-not user configuration. `remarkGfmWithWikilink` always applies `remark-gfm`
-first and registers the wiki-aware `gfmTable()` last, so the right
-precedence is guaranteed on every run, for every user.
+When two constructs compete for the same input, micromark tries the one
+registered **last** first — and registration order comes from the `.use()`
+chain, i.e. user code, not this package. If the default plugin shipped the
+wiki-aware table construct, `.use(remarkGfm).use(remarkWikilink)` would work
+while the reverse order silently split cells: same plugins, different trees.
+Rather than ship that trap, the default plugin has no table construct at
+all, and the preset owns the order internally — `remark-gfm` first,
+`gfmTable()` last, every time.
 
 ### What the preset registers, and why shadowing is safe
 
-The preset does not remove or patch anything inside `remark-gfm`. It applies
-stock `remark-gfm` in full, applies `remarkWikilink`, then registers our
-`gfmTable()` last — so the stock table construct is still present but
-permanently *shadowed*: micromark tries ours first and first success wins.
-Shadowing is not a trick; competing constructs resolved by precedence is how
-micromark's own core constructs already work.
-
-Three invariants make “the stock construct is inert” a tested property
-rather than an assumption:
-
-1. Ours is always tried first (the preset owns registration order).
-2. Ours succeeds everywhere stock would — it accepts a strict superset, and
-   the test suite pins structural equality with stock `remark-gfm` on every
-   non-wiki table, including not-a-table edge cases.
-3. Losing constructs leave no trace: failed attempts roll back completely,
-   and micromark only registers `resolveAll` resolvers for constructs that
-   *succeeded*, so the stock resolver never touches our events.
-
-The one real cost: on lines that are not tables, both constructs fail in
-sequence, so the preset spends one extra failed head-row scan per candidate
-line compared to plain `remark-gfm`. Composing manually from the pieces (see
-[API](#api)) registers only one table construct and has zero redundancy;
-stripping the stock construct out of `remark-gfm`'s registration from inside
-the preset would rely on that plugin's internals, which this package
-deliberately never touches.
+The preset doesn't remove or patch anything inside `remark-gfm`: it applies
+it in full, then registers `gfmTable()` last, so the stock table construct
+is still there but never reached — ours is tried first, succeeds wherever
+stock would (a tested strict superset), and failed attempts roll back
+without a trace. That's ordinary micromark precedence, not a trick. The only
+cost is one extra failed table attempt per non-table line; composing
+manually from the pieces (see [API](#api)) registers a single table
+construct and avoids even that.
 
 ### Sharp edges when mixing with remark-gfm
 
-Both follow directly from shadowing-by-registration-order, and both are
-covered by tests:
-
-- **`.use(remarkGfm)` after the preset un-fixes tables.** It registers an
-  even newer stock table construct that outruns ours, and aliased cells
-  split again. To keep that from being *silent* data corruption, the preset
-  ships a transformer that detects a wiki link cut at a pipe (an unclosed
-  `[[…` opener in one cell with its `…]]` closer in the next) and emits a
-  file warning (`remark-wikilink:table-precedence`) pointing at the
-  misconfiguration; it never fires on correct usage, including legitimate
-  rollbacks. Don't add `remark-gfm` yourself; if a framework injects it,
-  make sure the preset comes later.
-- **gfm options on a separate `remark-gfm` are silently shadowed.** The
-  preset applies its own copy of `remark-gfm`, and the later registration
-  wins at parse time — e.g. a user's `.use(remarkGfm, {singleTilde: false})`
-  before the preset is ignored. Any `remark-gfm` configuration must be passed
-  through the preset's `{gfm: …}` key instead.
+Because precedence follows registration order, anything registered *after*
+the preset that brings its own table construct — `remark-gfm` itself, or a
+plugin wrapping it — overrides the wiki-aware behavior, and aliased cells
+split again. The preset detects that signature and emits a file warning
+(`remark-wikilink:table-precedence`) instead of staying silent. For the same
+reason, options on a separate `.use(remarkGfm)` are ignored — pass them
+through the preset's `{gfm: …}` key. Both cases are covered by tests.
 
 ## API
 
