@@ -24,12 +24,19 @@ required from your authors.
 
 - [Install](#install)
 - [Use](#use)
-- [How the table integration works](#how-the-table-integration-works)
+- [Design](#design)
+  - [Tables are the hard part](#tables-are-the-hard-part)
+  - [Why the table construct is a fork](#why-the-table-construct-is-a-fork)
+  - [Division of labor between the two constructs](#division-of-labor-between-the-two-constructs)
+  - [Why a preset instead of plugin ordering](#why-a-preset-instead-of-plugin-ordering)
+  - [What the preset registers, and why shadowing is safe](#what-the-preset-registers-and-why-shadowing-is-safe)
+  - [Sharp edges when mixing with remark-gfm](#sharp-edges-when-mixing-with-remark-gfm)
 - [API](#api)
 - [Syntax](#syntax)
 - [Syntax decisions](#syntax-decisions)
 - [mdast nodes](#mdast-nodes)
 - [HTML output](#html-output)
+- [Comparison with other wiki-link plugins](#comparison-with-other-wiki-link-plugins)
 - [Compatibility](#compatibility)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
@@ -71,15 +78,16 @@ const processor = unified().use(remarkParse).use(remarkWikilinkGfm);
 ```
 
 > [!IMPORTANT]
-> Combining the two _independent_ plugins (`remark-wikilink` + `remark-gfm`)
-> parses wiki links everywhere **except** across table cell boundaries: the
-> stock GFM table construct classifies `|` characters before any other plugin
-> can see them, in _both_ `.use()` orders. That failure mode is deterministic
-> and covered by tests. When you need wiki links inside tables, use
-> `@lxcid/remark-wikilink/gfm` — and do not add a separate `.use(remarkGfm)`
-> after it.
+> The preset **replaces** `remark-gfm`; it does not coexist with it. Combining
+> the two _independent_ plugins (`remark-wikilink` + `remark-gfm`) parses wiki
+> links everywhere **except** across table cell boundaries — in _both_
+> `.use()` orders. And a separate `.use(remarkGfm)` added _after_ the preset
+> silently reverts table behavior. Both failure modes are deterministic and
+> covered by tests; the reasons are in [Design](#design).
 
-Configuration:
+Configuration — including any options you previously passed to `remark-gfm`,
+which must move into the preset's `gfm` key (see
+[sharp edges](#sharp-edges-when-mixing-with-remark-gfm)):
 
 ```ts
 unified()
@@ -95,7 +103,7 @@ unified()
   });
 ```
 
-## How the table integration works
+## Design
 
 The package is layered exactly like unified itself:
 
@@ -113,18 +121,113 @@ wikiLink / wikiEmbed mdast nodes
 consumer renderer or toMarkdown bridge
 ```
 
-The table construct is a fork of `micromark-extension-gfm-table` with one
-change: while scanning head and body rows, a `[` starts a **partial,
-reversible attempt** at a complete wiki span. If the span is complete
-(`[[target|alias]]` with a closing `]]` on the same line), it becomes one
-opaque `data` token and its pipes are never classified as cell dividers. If
-not, the attempt rolls back without consuming a single character and ordinary
-GFM behavior continues. The construct emits the exact token types of the
-stock extension, so the standard `mdast-util-gfm-table` bridge — and
-everything built on it — keeps working unchanged.
-
 The raw source is never rewritten, aliases are never encoded into sentinels,
 and authors never need to escape the alias pipe.
+
+### Tables are the hard part
+
+Tables are not part of core Markdown: CommonMark (what `remark-parse`
+implements) has no table syntax, and pipe tables only exist once the GFM
+table extension is loaded. That is why plain `remarkWikilink` needs no table
+logic at all — without GFM there is no row scanner classifying pipes, and the
+inline construct works everywhere unimpeded. The conflict appears only when
+GFM's table extension is present, because *it* decides what a `|` means
+before any inline syntax runs.
+
+### Why the table construct is a fork
+
+It would be nicer to tokenize wiki links “earlier” so the stock table parser
+could be used unchanged — but there is no earlier. CommonMark parsing is
+two-phase by specification: block structure (flow constructs, including
+tables) is fully determined before inline structure (text constructs,
+including wiki links) is ever parsed. Inline tokenization happens *inside*
+the cell regions the table has already delimited, so by the time any inline
+construct could see `[[a|b]]`, the row has been cut at its pipes. micromark
+also has no “protected span” concept a flow construct would respect.
+
+The only intervention point that does not involve rewriting the source is
+inside the table's own row scanner. So `gfmTable()` forks
+`micromark-extension-gfm-table` with one change: while scanning head and body
+rows, a `[` starts a **partial, reversible attempt** at a complete wiki span.
+If the span is complete (`[[target|alias]]` with a closing `]]` on the same
+line), it becomes one opaque `data` token and its pipes are never classified
+as cell dividers. If not, the attempt rolls back without consuming a single
+character and ordinary GFM behavior continues. The fork emits the exact token
+types of the stock extension, so the standard `mdast-util-gfm-table` bridge —
+and everything built on it — keeps working unchanged.
+
+If micromark or `micromark-extension-gfm-table` ever grow a hook for opaque
+inline spans during row scanning, this fork collapses into a configuration
+option and gets deleted.
+
+### Division of labor between the two constructs
+
+The two syntax extensions do strictly separate jobs:
+
+- **`wikilink()` is the wiki parser.** It turns `[[…]]`/`![[…]]` into tokens
+  (and, via the bridges, into mdast nodes) in paragraphs, headings, lists,
+  block quotes, *and inside table cells*. On its own it is full wiki support
+  everywhere.
+- **`gfmTable()` never emits a wiki token.** It only protects a complete span
+  from being split while cell boundaries are decided; the protected cell
+  content is parsed later, in the normal text phase, by `wikilink()`.
+
+Remove the fork and `wikilink()` still works everywhere — except an aliased
+link in a table gets chopped in half before the inline parser ever sees it.
+
+### Why a preset instead of plugin ordering
+
+micromark tries same-hook constructs in *reverse registration order*: the
+latest-registered extension is attempted first. Two independent plugins can
+therefore never guarantee that the wiki-aware table construct outranks the
+stock one in users' hands — with `.use(remarkWikilink)` + `.use(remarkGfm)`,
+the stock table wins in **both** orders (the default plugin deliberately
+registers no table construct rather than behave order-dependently). The
+preset exists to own that ordering: it is the one place that can register the
+wiki-aware construct *after* GFM's, deterministically, every time.
+
+### What the preset registers, and why shadowing is safe
+
+The preset does not remove or patch anything inside `remark-gfm`. It applies
+stock `remark-gfm` in full, applies `remarkWikilink`, then registers our
+`gfmTable()` last — so the stock table construct is still present but
+permanently *shadowed*: micromark tries ours first and first success wins.
+Shadowing is not a trick; competing constructs resolved by precedence is how
+micromark's own core constructs already work.
+
+Three invariants make “the stock construct is inert” a tested property
+rather than an assumption:
+
+1. Ours is always tried first (the preset owns registration order).
+2. Ours succeeds everywhere stock would — it accepts a strict superset, and
+   the test suite pins structural equality with stock `remark-gfm` on every
+   non-wiki table, including not-a-table edge cases.
+3. Losing constructs leave no trace: failed attempts roll back completely,
+   and micromark only registers `resolveAll` resolvers for constructs that
+   *succeeded*, so the stock resolver never touches our events.
+
+The one real cost: on lines that are not tables, both constructs fail in
+sequence, so the preset spends one extra failed head-row scan per candidate
+line compared to plain `remark-gfm`. Composing manually from the pieces (see
+[API](#api)) registers only one table construct and has zero redundancy;
+stripping the stock construct out of `remark-gfm`'s registration from inside
+the preset would rely on that plugin's internals, which this package
+deliberately never touches.
+
+### Sharp edges when mixing with remark-gfm
+
+Both follow directly from shadowing-by-registration-order, and both are
+covered by tests:
+
+- **`.use(remarkGfm)` after the preset silently un-fixes tables.** It
+  registers an even newer stock table construct that outruns ours, and
+  aliased cells split again with no error. Don't add `remark-gfm` yourself;
+  if a framework injects it, make sure the preset comes later.
+- **gfm options on a separate `remark-gfm` are silently shadowed.** The
+  preset applies its own copy of `remark-gfm`, and the later registration
+  wins at parse time — e.g. a user's `.use(remarkGfm, {singleTilde: false})`
+  before the preset is ignored. Any `remark-gfm` configuration must be passed
+  through the preset's `{gfm: …}` key instead.
 
 ## API
 
@@ -257,6 +360,32 @@ By default nodes carry hast data, so `remark-rehype`/`react-markdown` render:
 
 Override `resolveHref` (or replace `data` in your own transform) to integrate
 with your router or vault resolver.
+
+## Comparison with other wiki-link plugins
+
+[`remark-wiki-link`](https://github.com/landakram/remark-wiki-link) and
+[`@flowershow/remark-wiki-link`](https://github.com/flowershow/remark-wiki-link)
+established wiki links in the remark ecosystem, and this package gladly
+builds on their design lineage (see
+[Acknowledgements](#acknowledgements)). The differences are scope and the
+table problem:
+
+- **GFM table interop is the reason this package exists.** Checked
+  empirically (2026-07) against the core case
+  `| [[analysis/profile#Business profile|Initial profile]] | Current |`:
+  both plugins split the aliased link across three table cells, in both
+  `.use()` orders relative to `remark-gfm` — the alias pipe is classified as
+  a cell divider before their inline constructs run (the same two-phase
+  parsing constraint described in [Design](#design)). This package keeps it
+  one cell, with rollback behavior proven structurally identical to stock
+  GFM for everything that is not a complete wiki span.
+- **Scope is deliberately smaller here.** `@flowershow/remark-wiki-link` in
+  particular offers application-level conveniences — matching targets
+  against a supplied page list, image-embed rendering with dimensions, path
+  format presets. This package stays a parser core: one `resolveHref` hook,
+  no filesystem access, embed rendering left to the consumer. If you want
+  those conveniences and don't write wiki links inside tables, those
+  packages remain good choices.
 
 ## Compatibility
 
