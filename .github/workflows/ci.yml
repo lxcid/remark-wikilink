@@ -26,10 +26,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
       - run: pnpm run format-check
-      - run: pnpm run typecheck
       # `pretest` builds dist (development + production conditions) and
-      # compiles the test suite.
+      # compiles the test suite. It must precede `typecheck`: the tests
+      # import the package by self-reference, whose types resolve to the
+      # built declarations in dist/.
       - run: pnpm run pretest
+      - run: pnpm run typecheck
       # The suite runs twice: with the `development` export condition and
       # with the default/production condition.
       - run: pnpm run test-dev
