@@ -20,9 +20,8 @@ jobs:
       # No `registry-url` here: it would point npm's userconfig at a file
       # that reads the unset NODE_AUTH_TOKEN, superseding the ~/.npmrc the
       # changesets action writes from NPM_TOKEN and breaking authentication.
-      # Node 24 (>= 24.5.0) bundles npm >= 11.5.1, which trusted publishing
-      # (OIDC via the id-token permission above) requires — Node 22 bundles
-      # npm 10. CI still tests on Node 22, the engines floor.
+      # Node 24 (the engines floor; >= 24.5.0) bundles npm >= 11.5.1, which
+      # trusted publishing (OIDC via the id-token permission above) requires.
       - uses: actions/setup-node@v4
         with:
           node-version: "24"

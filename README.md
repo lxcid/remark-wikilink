@@ -43,7 +43,7 @@ required from your authors.
 
 ## Install
 
-Requires Node.js 22+ and ESM.
+Requires Node.js 24+ and ESM.
 
 ```sh
 pnpm add @lxcid/remark-wikilink
@@ -398,7 +398,7 @@ table problem:
 
 ## Compatibility
 
-- Node.js 22+, ESM only, TypeScript declarations included.
+- Node.js 24+, ESM only, TypeScript declarations included.
 - Supports micromark’s `development` and production export conditions; the
   test suite runs under both.
 - Works with `unified`/`remark` directly and with `react-markdown`.

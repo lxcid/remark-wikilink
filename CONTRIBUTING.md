@@ -2,7 +2,7 @@
 
 ## Setup
 
-Requires Node.js 22+ and [pnpm](https://pnpm.io).
+Requires Node.js 24+ and [pnpm](https://pnpm.io).
 
 ```sh
 pnpm install
