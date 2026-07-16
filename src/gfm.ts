@@ -59,3 +59,4 @@ export default function remarkGfmWithWikilink(
 }
 
 export { remarkGfmWithWikilink };
+export type { WikiEmbed, WikiLink, WikiReference } from "./types.js";
