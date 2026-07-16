@@ -43,8 +43,17 @@ Releases are managed with [changesets](https://github.com/changesets/changesets)
 1. Every user-facing change lands with a changeset (`pnpm changeset`).
 2. The `release` workflow opens a “Version Packages” PR that accumulates
    pending changesets; merging it publishes to npm with provenance.
-   Publishing requires an `NPM_TOKEN` secret from a 2FA-enabled npm account.
-3. For pre-releases, enter pre mode first: `pnpm changeset pre enter alpha`,
+   Publishing authenticates with
+   [npm trusted publishing](https://docs.npmjs.com/trusted-publishers)
+   (OIDC) — there is no npm token to manage.
+3. One-time bootstrap, because npm only lets you configure a trusted
+   publisher on an existing package: after merging the first Version
+   Packages PR, publish manually from a clean checkout of `main`
+   (`pnpm install && pnpm test && npm publish`, with your 2FA device), then
+   add the trusted publisher in the package's npm settings — repository
+   `lxcid/remark-wikilink`, workflow `release.yml` (case-sensitive, filename
+   only). Every later release is automatic.
+4. For pre-releases, enter pre mode first: `pnpm changeset pre enter alpha`,
    merge the version PR (versions like `0.1.0-alpha.0`), and validate the
    alpha in a real consumer before `pnpm changeset pre exit` and the stable
    release.
