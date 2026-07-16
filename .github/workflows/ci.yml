@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run format-check
+      # `pretest` builds dist (development + production conditions) and
+      # compiles the test suite. It must precede `typecheck`: the tests
+      # import the package by self-reference, whose types resolve to the
+      # built declarations in dist/.
+      - run: pnpm run pretest
+      - run: pnpm run typecheck
+      # The suite runs twice: with the `development` export condition and
+      # with the default/production condition.
+      - run: pnpm run test-dev
+      - run: pnpm run test-prod
+      - run: pnpm run check-pack

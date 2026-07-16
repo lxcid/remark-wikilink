@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "eslint/no-underscore-dangle": ["warn", { "allow": ["_align"] }],
+    "oxc/no-this-in-exported-function": "off",
+    "typescript/no-this-alias": "off",
+    "unicorn/require-module-specifiers": "off"
+  },
+  "ignorePatterns": ["dist/", "test-dist/", "coverage/", "node_modules/"]
+}

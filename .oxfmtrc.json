@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  // Markdown is exempt: a generic table formatter splits `[[target|alias]]`
+  // at the alias pipe — the exact behavior this package exists to prevent.
+  "ignorePatterns": ["**/*.md"]
+}

@@ -1,0 +1,99 @@
+{
+  "name": "@lxcid/remark-wikilink",
+  "version": "0.0.0",
+  "description": "remark plugin for Obsidian-style wiki links that understands [[target|alias]] before GFM table pipes are classified",
+  "keywords": [
+    "gfm",
+    "markdown",
+    "mdast",
+    "micromark",
+    "micromark-extension",
+    "obsidian",
+    "remark",
+    "remark-plugin",
+    "table",
+    "unified",
+    "wiki-link",
+    "wikilink"
+  ],
+  "bugs": "https://github.com/lxcid/remark-wikilink/issues",
+  "license": "MIT",
+  "author": "Stan Chang <khinboon@gmail.com>",
+  "repository": "lxcid/remark-wikilink",
+  "files": [
+    "dist/",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./dist/dev/index.js",
+      "default": "./dist/index.js"
+    },
+    "./gfm": {
+      "types": "./dist/gfm.d.ts",
+      "development": "./dist/dev/gfm.js",
+      "default": "./dist/gfm.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node script/clean.mjs && tsc -p tsconfig.build.json && node script/build-production.mjs",
+    "format": "oxfmt",
+    "format-check": "oxfmt --check",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "pretest": "pnpm run build && tsc -p tsconfig.test.json",
+    "test": "pnpm run test-dev && pnpm run test-prod",
+    "test-dev": "node --conditions development --test \"test-dist/test/*.test.js\"",
+    "test-prod": "node --test \"test-dist/test/*.test.js\"",
+    "coverage": "c8 --reporter text --reporter html pnpm run test-dev",
+    "check-pack": "node script/check-pack.mjs"
+  },
+  "dependencies": {
+    "@types/hast": "^3.0.5",
+    "@types/mdast": "^4.0.4",
+    "devlop": "^1.1.0",
+    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-to-hast": "^13.2.1",
+    "mdast-util-to-markdown": "^2.1.2",
+    "micromark-factory-space": "^2.0.1",
+    "micromark-util-character": "^2.1.1",
+    "micromark-util-symbol": "^2.0.1",
+    "micromark-util-types": "^2.0.2",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "c8": "^11.0.0",
+    "micromark": "^4.0.2",
+    "micromark-build": "^2.0.3",
+    "micromark-extension-gfm-table": "^2.1.1",
+    "oxfmt": "^0.59.0",
+    "oxlint": "^1.74.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-markdown": "^10.1.0",
+    "rehype-stringify": "^10.0.1",
+    "remark-rehype": "^11.1.2",
+    "typescript": "^7.0.2",
+    "unist-util-visit": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.0.8"
+}
