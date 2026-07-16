@@ -301,8 +301,12 @@ alias     ::= 1*( char - "[" - "]" - lineEnding )         ; may contain "|"
 - **Escaped pipes**: `\|` acts exactly like `|` — as the divider after the
   target, as a literal pipe inside the alias (`[[a\|b]]` ≡ `[[a|b]]`). This is
   the Obsidian convention for wiki links inside tables, so existing vault
-  content keeps working. When serializing back to Markdown, pipes inside
-  table cells are written as `\|`; elsewhere as `|`.
+  content keeps working. When serializing back to Markdown, one backslash is
+  added before the divider and every alias pipe inside table cells. Outside
+  tables, plain `|` is used unless an escape is needed to preserve a trailing
+  target backslash or an existing backslash before an alias pipe. These rules
+  preserve nodes through this package's parser; they do not define a separate
+  parity-sensitive backslash grammar for stock GFM edge cases.
 - **Empty alias** (`[[a|]]`) is valid and distinct from no alias: `alias` is
   `""`, and display text falls back to the target.
 - **Trimming**: `target` and `alias` are trimmed of spaces and tabs only

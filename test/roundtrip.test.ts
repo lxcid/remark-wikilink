@@ -81,6 +81,69 @@ test("keeps plain dividers outside tables", function () {
   assert.equal(String(plain.processSync("[[a|b]]\n")), "[[a|b]]\n");
 });
 
+const backslashRoundTrips = [
+  {
+    name: "plain wiki link with a trailing-backslash target",
+    processor: plain,
+    source: "[[target\\\\|alias]]\n",
+    serializedSpan: "[[target\\\\|alias]]",
+  },
+  {
+    name: "plain wiki embed with a trailing-backslash target",
+    processor: plain,
+    source: "![[target\\\\|alias]]\n",
+    serializedSpan: "![[target\\\\|alias]]",
+  },
+  {
+    name: "plain wiki link with a backslash-pipe alias",
+    processor: plain,
+    source: "[[target|a\\\\|b]]\n",
+    serializedSpan: "[[target|a\\\\|b]]",
+  },
+  {
+    name: "plain wiki embed with a backslash-pipe alias",
+    processor: plain,
+    source: "![[target|a\\\\|b]]\n",
+    serializedSpan: "![[target|a\\\\|b]]",
+  },
+  {
+    name: "table wiki link with a trailing-backslash target",
+    processor: gfm,
+    source: ["| a |", "| --- |", "| [[target\\\\|alias]] |", ""].join("\n"),
+    serializedSpan: "[[target\\\\|alias]]",
+  },
+  {
+    name: "table wiki embed with a trailing-backslash target",
+    processor: gfm,
+    source: ["| a |", "| --- |", "| ![[target\\\\|alias]] |", ""].join("\n"),
+    serializedSpan: "![[target\\\\|alias]]",
+  },
+  {
+    name: "table wiki link with a backslash-pipe alias",
+    processor: gfm,
+    source: ["| a |", "| --- |", "| [[target|a\\\\|b]] |", ""].join("\n"),
+    serializedSpan: "[[target\\|a\\\\|b]]",
+  },
+  {
+    name: "table wiki embed with a backslash-pipe alias",
+    processor: gfm,
+    source: ["| a |", "| --- |", "| ![[target|a\\\\|b]] |", ""].join("\n"),
+    serializedSpan: "![[target\\|a\\\\|b]]",
+  },
+];
+
+for (const { name, processor, source, serializedSpan } of backslashRoundTrips) {
+  test(`round-trips ${name}`, function () {
+    const tree = parseToRoot(processor, source);
+    const serialized = stringify(processor, tree);
+    const reparsed = parseToRoot(processor, serialized);
+
+    assert.ok(serialized.includes(serializedSpan));
+    assert.equal(signature(reparsed), signature(tree));
+    assert.equal(stringify(processor, reparsed), serialized);
+  });
+}
+
 // The serializer refuses nodes the wiki grammar cannot represent: silently
 // emitting text that reparses as a different node would be corruption.
 const unrepresentableNodes: Record<string, { target: string; alias: string | null }> = {
@@ -92,7 +155,6 @@ const unrepresentableNodes: Record<string, { target: string; alias: string | nul
   "bracket in alias": { target: "a", alias: "x]y" },
   "line ending in alias": { target: "a", alias: "x\ny" },
   "untrimmed alias": { target: "a", alias: "x " },
-  "backslash-pipe in alias": { target: "a", alias: "x\\|y" },
 };
 
 for (const [name, fields] of Object.entries(unrepresentableNodes)) {
