@@ -81,58 +81,58 @@ test("keeps plain dividers outside tables", function () {
   assert.equal(String(plain.processSync("[[a|b]]\n")), "[[a|b]]\n");
 });
 
-const backslashRoundTrips = [
+const backslashContexts = [
   {
-    name: "plain wiki link with a trailing-backslash target",
+    name: "plain",
     processor: plain,
-    source: "[[target\\\\|alias]]\n",
-    serializedSpan: "[[target\\\\|alias]]",
+    inTable: false,
+    document(span: string): string {
+      return span + "\n";
+    },
   },
   {
-    name: "plain wiki embed with a trailing-backslash target",
-    processor: plain,
-    source: "![[target\\\\|alias]]\n",
-    serializedSpan: "![[target\\\\|alias]]",
-  },
-  {
-    name: "plain wiki link with a backslash-pipe alias",
-    processor: plain,
-    source: "[[target|a\\\\|b]]\n",
-    serializedSpan: "[[target|a\\\\|b]]",
-  },
-  {
-    name: "plain wiki embed with a backslash-pipe alias",
-    processor: plain,
-    source: "![[target|a\\\\|b]]\n",
-    serializedSpan: "![[target|a\\\\|b]]",
-  },
-  {
-    name: "table wiki link with a trailing-backslash target",
+    name: "table",
     processor: gfm,
-    source: ["| a |", "| --- |", "| [[target\\\\|alias]] |", ""].join("\n"),
-    serializedSpan: "[[target\\\\|alias]]",
-  },
-  {
-    name: "table wiki embed with a trailing-backslash target",
-    processor: gfm,
-    source: ["| a |", "| --- |", "| ![[target\\\\|alias]] |", ""].join("\n"),
-    serializedSpan: "![[target\\\\|alias]]",
-  },
-  {
-    name: "table wiki link with a backslash-pipe alias",
-    processor: gfm,
-    source: ["| a |", "| --- |", "| [[target|a\\\\|b]] |", ""].join("\n"),
-    serializedSpan: "[[target\\|a\\\\|b]]",
-  },
-  {
-    name: "table wiki embed with a backslash-pipe alias",
-    processor: gfm,
-    source: ["| a |", "| --- |", "| ![[target|a\\\\|b]] |", ""].join("\n"),
-    serializedSpan: "![[target\\|a\\\\|b]]",
+    inTable: true,
+    document(span: string): string {
+      return ["| a |", "| --- |", `| ${span} |`, ""].join("\n");
+    },
   },
 ];
 
-for (const { name, processor, source, serializedSpan } of backslashRoundTrips) {
+for (const context of backslashContexts) {
+  for (const embed of [false, true]) {
+    const nodeName = embed ? "wiki embed" : "wiki link";
+    const marker = embed ? "!" : "";
+
+    for (const retainedBackslashes of [1, 2, 3]) {
+      const sourceBackslashes = "\\".repeat(retainedBackslashes + 1);
+      const targetSpan = `${marker}[[target${sourceBackslashes}|alias]]`;
+      testBackslashRoundTrip(
+        `${context.name} ${nodeName} with a target backslash run of ${retainedBackslashes}`,
+        context.processor,
+        context.document(targetSpan),
+        targetSpan,
+      );
+
+      const aliasSourceSpan = `${marker}[[target|a${sourceBackslashes}|b]]`;
+      const aliasSerializedSpan = `${marker}[[target${context.inTable ? "\\|" : "|"}a${sourceBackslashes}|b]]`;
+      testBackslashRoundTrip(
+        `${context.name} ${nodeName} with an alias backslash run of ${retainedBackslashes}`,
+        context.processor,
+        context.document(aliasSourceSpan),
+        aliasSerializedSpan,
+      );
+    }
+  }
+}
+
+function testBackslashRoundTrip(
+  name: string,
+  processor: typeof gfm | typeof plain,
+  source: string,
+  serializedSpan: string,
+): undefined {
   test(`round-trips ${name}`, function () {
     const tree = parseToRoot(processor, source);
     const serialized = stringify(processor, tree);
