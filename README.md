@@ -72,9 +72,19 @@ import { unified } from "unified";
 const processor = unified().use(remarkParse).use(remarkGfmWithWikilink);
 ```
 
+Parsing produces `wikiLink`/`wikiEmbed` mdast nodes. To render them as HTML,
+pass the hast handlers to `remark-rehype` (see [HTML output](#html-output)):
+
 ```tsx
-// react-markdown works the same way:
-<Markdown remarkPlugins={[remarkGfmWithWikilink]}>{markdown}</Markdown>
+// react-markdown:
+import { wikilinkHandlers } from "@lxcid/remark-wikilink";
+
+<Markdown
+  remarkPlugins={[remarkGfmWithWikilink]}
+  remarkRehypeOptions={{ handlers: wikilinkHandlers() }}
+>
+  {markdown}
+</Markdown>;
 ```
 
 > [!IMPORTANT]
@@ -85,21 +95,22 @@ const processor = unified().use(remarkParse).use(remarkGfmWithWikilink);
 > silently reverts table behavior. Both failure modes are deterministic and
 > covered by tests; the reasons are in [Design](#design).
 
-Configuration — including any options you previously passed to `remark-gfm`,
-which must move into the preset's `gfm` key (see
-[sharp edges](#sharp-edges-when-mixing-with-remark-gfm)):
+Configuration — any options you previously passed to `remark-gfm` must move
+into the preset's `gfm` key (see
+[sharp edges](#sharp-edges-when-mixing-with-remark-gfm)); URL resolution is
+configured on the handlers, at the rendering layer:
 
 ```ts
 unified()
   .use(remarkParse)
-  .use(remarkGfmWithWikilink, {
-    gfm: { singleTilde: false }, // forwarded to remark-gfm
-    wikilink: {
+  .use(remarkGfmWithWikilink, { gfm: { singleTilde: false } })
+  .use(remarkRehype, {
+    handlers: wikilinkHandlers({
       resolveHref(reference) {
         // reference = {target, alias, embed}
         return `/vault/${reference.target}`;
       },
-    },
+    }),
   });
 ```
 
@@ -220,11 +231,14 @@ forced through remark:
   name, same token types, superset behavior). When composing manually, use
   it *instead of* the stock extension; if the stock one is also present,
   register this one _after_ it so it takes precedence
-- `wikilinkFromMarkdown(options?)` — `mdast-util-from-markdown` extension
-- `wikilinkToMarkdown()` — `mdast-util-to-markdown` extension
+- `wikilinkFromMarkdown()` — `mdast-util-from-markdown` extension
+- `wikilinkToMarkdown()` — `mdast-util-to-markdown` extension; throws on
+  nodes the grammar cannot represent (brackets or pipes in `target`, line
+  endings, untrimmed fields) instead of silently corrupting output
+- `wikilinkHandlers(options?)` — `mdast-util-to-hast` handlers for
+  `remark-rehype`/`react-markdown` (see [HTML output](#html-output))
 - `defaultResolveHref(reference)` — the default URL resolver
-- Types: `Options`, `WikiLink`, `WikiEmbed`, `WikiReference`,
-  `WikiLinkData`, `WikiEmbedData`
+- Types: `Options`, `WikiLink`, `WikiEmbed`, `WikiReference`
 
 Manual composition from the pieces (no `remark-gfm`, no preset):
 
@@ -237,16 +251,17 @@ fromMarkdownExtensions.push(gfmTableFromMarkdown(), wikilinkFromMarkdown());
 toMarkdownExtensions.push(gfmTableToMarkdown(), wikilinkToMarkdown());
 ```
 
-### `Options`
+### `Options` (for `wikilinkHandlers`)
 
 - `resolveHref?: (reference: WikiReference) => string` — turn a parsed
-  reference (`{target, alias, embed}`) into the `href` used in the default
-  hast data. The parser performs **no filesystem access**; resolution
-  strategy (shortest path, slugs, routing) is entirely the consumer’s. The
-  default percent-encodes the target, keeping the first `#` as the anchor
-  separator (a trailing `#` with no anchor is dropped). It does **no**
-  sanitization — a target like `javascript:x` or `//host` passes through, so
-  override `resolveHref` when rendering untrusted input.
+  reference (`{target, alias, embed}`) into the rendered anchor's `href`,
+  called at mdast→hast conversion time with the node's live fields. There is
+  **no filesystem access**; resolution strategy (shortest path, slugs,
+  routing) is entirely the consumer’s. The default percent-encodes the
+  target, keeping the first `#` as the anchor separator (a trailing `#` with
+  no anchor is dropped). It does **no** sanitization — a target like
+  `javascript:x` or `//host` passes through, so override `resolveHref` when
+  rendering untrusted input.
 
 ## Syntax
 
@@ -318,32 +333,40 @@ interface WikiLink {
   type: "wikiLink";
   target: string; // "analysis/profile#Business profile"
   alias: string | null; // "Initial profile" | null
-  data?: WikiLinkData;
 }
 
 interface WikiEmbed {
   type: "wikiEmbed";
   target: string;
   alias: string | null;
-  data?: WikiEmbedData;
 }
 ```
 
 Both are registered in mdast’s `PhrasingContentMap`/`RootContentMap`, carry
 full positional information, and round-trip through
-`remark-stringify`/`mdast-util-to-markdown`.
+`remark-stringify`/`mdast-util-to-markdown`. `target` and `alias` are the
+**single source of truth**: nothing derived is cached on the node, so
+transforms may rewrite them freely and every later stage — Markdown and
+HTML alike — follows.
 
 ## HTML output
 
-By default nodes carry hast data, so `remark-rehype`/`react-markdown` render:
+Rendering is a separate, explicit layer: pass `wikilinkHandlers()` to
+`remark-rehype` (or `react-markdown`'s `remarkRehypeOptions`):
+
+```ts
+.use(remarkRehype, { handlers: wikilinkHandlers({ resolveHref }) })
+```
 
 ```html
 <a class="wiki-link" href="analysis/profile#Business%20profile">Initial profile</a>
 <a class="wiki-embed" href="chart.png">chart.png</a>
 ```
 
-Override `resolveHref` (or replace `data` in your own transform) to integrate
-with your router or vault resolver.
+The handlers read the node's live `target`/`alias` at conversion time, so
+they always agree with your transforms. Without handlers, wiki nodes render
+as nothing — rendering is opt-in by design. Override `resolveHref` to
+integrate with your router or vault resolver.
 
 ## Comparison with other wiki-link plugins
 

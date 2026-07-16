@@ -1,7 +1,8 @@
 import type { Data, Node } from "mdast";
 
 /**
- * A parsed wiki reference, passed to {@linkcode Options.resolveHref}.
+ * A parsed wiki reference, passed to {@linkcode Options.resolveHref} by the
+ * hast handlers.
  */
 export interface WikiReference {
   /**
@@ -21,32 +22,25 @@ export interface WikiReference {
 }
 
 /**
- * Configuration for `remark-wikilink`.
+ * Configuration for `wikilinkHandlers` (the hast rendering layer).
  */
 export interface Options {
   /**
-   * Turn a wiki reference into a URL for the default hast `data` fields
-   * (`data.hProperties.href`).
+   * Turn a wiki reference into the `href` of the rendered anchor.
    *
-   * The parser never touches the filesystem; resolution is entirely up to
-   * this function. Defaults to percent-encoding the target as a relative
-   * URL, keeping `#` as the anchor separator.
+   * Called at mdast→hast conversion time with the node's live fields. There
+   * is no filesystem access; resolution is entirely up to this function.
+   * Defaults to percent-encoding the target, keeping `#` as the anchor
+   * separator, with no sanitization.
    */
   resolveHref?: ((reference: WikiReference) => string) | null | undefined;
 }
 
 /**
- * Info associated with `wikiLink` nodes by the ecosystem.
- */
-export interface WikiLinkData extends Data {}
-
-/**
- * Info associated with `wikiEmbed` nodes by the ecosystem.
- */
-export interface WikiEmbedData extends Data {}
-
-/**
  * mdast node for a wiki link such as `[[target|alias]]`.
+ *
+ * `target` and `alias` are the single source of truth — nothing derived is
+ * cached on the node, so transforms may rewrite them freely.
  */
 export interface WikiLink extends Node {
   /**
@@ -65,11 +59,14 @@ export interface WikiLink extends Node {
   /**
    * Data associated with the mdast wiki link.
    */
-  data?: WikiLinkData | undefined;
+  data?: Data | undefined;
 }
 
 /**
  * mdast node for a wiki embed such as `![[target|alias]]`.
+ *
+ * `target` and `alias` are the single source of truth — nothing derived is
+ * cached on the node, so transforms may rewrite them freely.
  */
 export interface WikiEmbed extends Node {
   /**
@@ -88,7 +85,7 @@ export interface WikiEmbed extends Node {
   /**
    * Data associated with the mdast wiki embed.
    */
-  data?: WikiEmbedData | undefined;
+  data?: Data | undefined;
 }
 
 // Register the nodes in mdast content maps so utilities (`unist-util-visit`,

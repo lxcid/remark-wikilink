@@ -4,30 +4,17 @@ import type {
   Extension as FromMarkdownExtension,
   Token,
 } from "mdast-util-from-markdown";
-import { defaultResolveHref } from "./resolve.js";
-import type {
-  Options,
-  WikiEmbed,
-  WikiEmbedData,
-  WikiLink,
-  WikiLinkData,
-  WikiReference,
-} from "./types.js";
+import type { WikiEmbed, WikiLink } from "./types.js";
 
 /**
  * Create an extension for `mdast-util-from-markdown` to enable wiki links
  * and embeds.
  *
- * Nodes get `data.hName`/`data.hProperties`/`data.hChildren` so
- * `mdast-util-to-hast` (and therefore `remark-rehype`, `react-markdown`, …)
- * renders them as anchors by default; pass
- * {@linkcode Options.resolveHref} to control the `href`.
+ * Nodes carry only `target` and `alias` — the single source of truth.
+ * Rendering is separate: pass `wikilinkHandlers()` to `remark-rehype` to get
+ * HTML (see the readme's HTML output section).
  */
-export function wikilinkFromMarkdown(
-  options?: Readonly<Options> | null | undefined,
-): FromMarkdownExtension {
-  const resolveHref = options?.resolveHref ?? defaultResolveHref;
-
+export function wikilinkFromMarkdown(): FromMarkdownExtension {
   return {
     enter: {
       wikiEmbed: enterWikiEmbed,
@@ -41,28 +28,6 @@ export function wikilinkFromMarkdown(
       wikiLinkTarget: exitWikiLinkTarget,
     },
   };
-
-  function exitWikiSpan(this: CompileContext, token: Token): undefined {
-    const node = currentWikiNode(this);
-    const embed = node.type === "wikiEmbed";
-    const reference: WikiReference = {
-      target: node.target,
-      alias: node.alias,
-      embed,
-    };
-    const display = node.alias === null || node.alias === "" ? node.target : node.alias;
-
-    node.data = {
-      hName: "a",
-      hProperties: {
-        className: [embed ? "wiki-embed" : "wiki-link"],
-        href: resolveHref(reference),
-      },
-      hChildren: [{ type: "text", value: display }],
-    } as WikiLinkData & WikiEmbedData;
-
-    this.exit(token);
-  }
 }
 
 function enterWikiLink(this: CompileContext, token: Token): undefined {
@@ -71,6 +36,10 @@ function enterWikiLink(this: CompileContext, token: Token): undefined {
 
 function enterWikiEmbed(this: CompileContext, token: Token): undefined {
   this.enter({ type: "wikiEmbed", target: "", alias: null }, token);
+}
+
+function exitWikiSpan(this: CompileContext, token: Token): undefined {
+  this.exit(token);
 }
 
 function exitWikiLinkTarget(this: CompileContext, token: Token): undefined {

@@ -139,50 +139,11 @@ test("preserves positional information", function () {
   });
 });
 
-test("adds default hast data for rendering", function () {
-  const node = soleWikiLink("[[analysis/profile#Business profile|Initial profile]]");
-  assert.deepEqual(node.data, {
-    hName: "a",
-    hProperties: {
-      className: ["wiki-link"],
-      href: "analysis/profile#Business%20profile",
-    },
-    hChildren: [{ type: "text", value: "Initial profile" }],
-  });
-});
-
-test("tags embeds with the wiki-embed class", function () {
-  const node = soleWikiEmbed("![[Note]]");
-  assert.equal(
-    (node.data as { hProperties: { className: Array<string> } }).hProperties.className[0],
-    "wiki-embed",
-  );
-});
-
-test("supports a custom resolveHref", function () {
-  const tree = parseWiki("[[Note#Heading|x]] and ![[Image]]", {
-    resolveHref(reference) {
-      return `/vault/${reference.embed ? "embed" : "link"}/${reference.target}`;
-    },
-  });
-  const paragraph = tree.children[0] as Paragraph;
-  const link = paragraph.children[0] as WikiLink;
-  const embed = paragraph.children[2] as WikiEmbed;
-  assert.equal(
-    (link.data as { hProperties: { href: string } }).hProperties.href,
-    "/vault/link/Note#Heading",
-  );
-  assert.equal(
-    (embed.data as { hProperties: { href: string } }).hProperties.href,
-    "/vault/embed/Image",
-  );
-});
-
-test("falls back to the target for display when the alias is empty", function () {
-  const node = soleWikiLink("[[Note|]]");
-  assert.deepEqual((node.data as { hChildren: Array<{ value: string }> }).hChildren, [
-    { type: "text", value: "Note" },
-  ]);
+test("nodes carry no rendering data — target and alias are the only authority", function () {
+  const link = soleWikiLink("[[analysis/profile#Business profile|Initial profile]]");
+  assert.equal(link.data, undefined);
+  const embed = soleWikiEmbed("![[Note]]");
+  assert.equal(embed.data, undefined);
 });
 
 // Invalid syntax stays literal text, identical to a parser without the

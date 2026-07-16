@@ -1,4 +1,4 @@
-import remarkWikilink, { type Options } from "@lxcid/remark-wikilink";
+import remarkWikilink from "@lxcid/remark-wikilink";
 import remarkGfmWithWikilink from "@lxcid/remark-wikilink/gfm";
 import type { Root, RootContent, Table, TableCell, TableRow } from "mdast";
 import remarkGfm from "remark-gfm";
@@ -25,8 +25,8 @@ export function parseToRoot(
 /**
  * Parse with `remark-parse` + `remark-wikilink` (inline syntax only).
  */
-export function parseWiki(value: string, options?: Readonly<Options> | null): Root {
-  return parseToRoot(unified().use(remarkParse).use(remarkWikilink, options), value);
+export function parseWiki(value: string): Root {
+  return parseToRoot(unified().use(remarkParse).use(remarkWikilink), value);
 }
 
 /**

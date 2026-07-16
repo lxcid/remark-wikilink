@@ -18,32 +18,23 @@ import type { Processor } from "unified";
 import { wikilinkFromMarkdown } from "./from-markdown.js";
 import { wikilink } from "./syntax.js";
 import { wikilinkToMarkdown } from "./to-markdown.js";
-import type { Options } from "./types.js";
 
 export { wikilinkFromMarkdown } from "./from-markdown.js";
 export { defaultResolveHref } from "./resolve.js";
 export { wikilink } from "./syntax.js";
 export { gfmTable } from "./table-syntax.js";
+export { wikilinkHandlers } from "./to-hast.js";
 export { wikilinkToMarkdown } from "./to-markdown.js";
-export type {
-  Options,
-  WikiEmbed,
-  WikiEmbedData,
-  WikiLink,
-  WikiLinkData,
-  WikiReference,
-} from "./types.js";
+export type { Options, WikiEmbed, WikiLink, WikiReference } from "./types.js";
 
 /**
  * Add support for Obsidian-style wiki links and embeds.
  *
- * @param options
- *   Configuration (optional).
+ * Parsing only: nodes carry `target` and `alias`. To render HTML, pass
+ * `wikilinkHandlers()` to `remark-rehype` (or `react-markdown`'s
+ * `remarkRehypeOptions`).
  */
-export default function remarkWikilink(
-  this: unknown,
-  options?: Readonly<Options> | null | undefined,
-): undefined {
+export default function remarkWikilink(this: unknown): undefined {
   const self = this as Processor<Root>;
   const data = self.data();
 
@@ -52,7 +43,7 @@ export default function remarkWikilink(
   const toMarkdownExtensions = data.toMarkdownExtensions || (data.toMarkdownExtensions = []);
 
   micromarkExtensions.push(wikilink());
-  fromMarkdownExtensions.push(wikilinkFromMarkdown(options));
+  fromMarkdownExtensions.push(wikilinkFromMarkdown());
   toMarkdownExtensions.push(wikilinkToMarkdown());
 }
 

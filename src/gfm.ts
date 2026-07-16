@@ -21,20 +21,18 @@ import remarkGfm, { type Options as GfmOptions } from "remark-gfm";
 import type { Processor } from "unified";
 import remarkWikilink from "./index.js";
 import { gfmTable } from "./table-syntax.js";
-import type { Options as WikilinkOptions } from "./types.js";
 
 /**
  * Configuration for `@lxcid/remark-wikilink/gfm`.
+ *
+ * HTML rendering is configured separately — pass `wikilinkHandlers()` to
+ * `remark-rehype`, not to this preset.
  */
 export interface Options {
   /**
    * Configuration passed to `remark-gfm`.
    */
   gfm?: Readonly<GfmOptions> | null | undefined;
-  /**
-   * Configuration passed to `remark-wikilink`.
-   */
-  wikilink?: Readonly<WikilinkOptions> | null | undefined;
 }
 
 /**
@@ -50,7 +48,7 @@ export default function remarkGfmWithWikilink(
 ): undefined {
   const self = this as Processor<Root>;
   remarkGfm.call(self, options?.gfm ?? undefined);
-  remarkWikilink.call(self, options?.wikilink ?? undefined);
+  remarkWikilink.call(self);
 
   const data = self.data();
   const micromarkExtensions = data.micromarkExtensions || (data.micromarkExtensions = []);
