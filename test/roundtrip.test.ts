@@ -81,6 +81,69 @@ test("keeps plain dividers outside tables", function () {
   assert.equal(String(plain.processSync("[[a|b]]\n")), "[[a|b]]\n");
 });
 
+const backslashContexts = [
+  {
+    name: "plain",
+    processor: plain,
+    inTable: false,
+    document(span: string): string {
+      return span + "\n";
+    },
+  },
+  {
+    name: "table",
+    processor: gfm,
+    inTable: true,
+    document(span: string): string {
+      return ["| a |", "| --- |", `| ${span} |`, ""].join("\n");
+    },
+  },
+];
+
+for (const context of backslashContexts) {
+  for (const embed of [false, true]) {
+    const nodeName = embed ? "wiki embed" : "wiki link";
+    const marker = embed ? "!" : "";
+
+    for (const retainedBackslashes of [1, 2, 3]) {
+      const sourceBackslashes = "\\".repeat(retainedBackslashes + 1);
+      const targetSpan = `${marker}[[target${sourceBackslashes}|alias]]`;
+      testBackslashRoundTrip(
+        `${context.name} ${nodeName} with a target backslash run of ${retainedBackslashes}`,
+        context.processor,
+        context.document(targetSpan),
+        targetSpan,
+      );
+
+      const aliasSourceSpan = `${marker}[[target|a${sourceBackslashes}|b]]`;
+      const aliasSerializedSpan = `${marker}[[target${context.inTable ? "\\|" : "|"}a${sourceBackslashes}|b]]`;
+      testBackslashRoundTrip(
+        `${context.name} ${nodeName} with an alias backslash run of ${retainedBackslashes}`,
+        context.processor,
+        context.document(aliasSourceSpan),
+        aliasSerializedSpan,
+      );
+    }
+  }
+}
+
+function testBackslashRoundTrip(
+  name: string,
+  processor: typeof gfm | typeof plain,
+  source: string,
+  serializedSpan: string,
+): undefined {
+  test(`round-trips ${name}`, function () {
+    const tree = parseToRoot(processor, source);
+    const serialized = stringify(processor, tree);
+    const reparsed = parseToRoot(processor, serialized);
+
+    assert.ok(serialized.includes(serializedSpan));
+    assert.equal(signature(reparsed), signature(tree));
+    assert.equal(stringify(processor, reparsed), serialized);
+  });
+}
+
 // The serializer refuses nodes the wiki grammar cannot represent: silently
 // emitting text that reparses as a different node would be corruption.
 const unrepresentableNodes: Record<string, { target: string; alias: string | null }> = {
@@ -92,7 +155,6 @@ const unrepresentableNodes: Record<string, { target: string; alias: string | nul
   "bracket in alias": { target: "a", alias: "x]y" },
   "line ending in alias": { target: "a", alias: "x\ny" },
   "untrimmed alias": { target: "a", alias: "x " },
-  "backslash-pipe in alias": { target: "a", alias: "x\\|y" },
 };
 
 for (const [name, fields] of Object.entries(unrepresentableNodes)) {

@@ -11,9 +11,10 @@ type PeekableHandle = Handle & { peek?: Handle };
  * Create an extension for `mdast-util-to-markdown` to serialize wiki links
  * and embeds.
  *
- * Inside GFM table cells the alias divider and any alias pipes are written
- * as `\|` (the Obsidian convention), so the output also survives parsers
- * without wiki-aware tables; elsewhere plain `|` is used.
+ * Inside GFM table cells one backslash is added before the alias divider and
+ * every alias pipe (the Obsidian convention). Outside tables, escaping is
+ * added only where needed to preserve a trailing target backslash or a
+ * backslash before an alias pipe.
  */
 export function wikilinkToMarkdown(): ToMarkdownExtension {
   return {
@@ -46,14 +47,24 @@ function inTableCell(stack: ReadonlyArray<string>): boolean {
 
 function serializeWikiSpan(node: WikiEmbed | WikiLink, escapePipes: boolean): string {
   assertRepresentable(node);
-  const divider = escapePipes ? "\\|" : "|";
+  const divider = escapePipes || node.target.endsWith("\\") ? "\\|" : "|";
   let value = "[[" + node.target;
 
   if (node.alias !== null) {
-    value += divider + (escapePipes ? node.alias.replaceAll("|", "\\|") : node.alias);
+    value += divider + serializeAlias(node.alias, escapePipes);
   }
 
   return value + "]]";
+}
+
+function serializeAlias(alias: string, escapePipes: boolean): string {
+  if (escapePipes) {
+    return alias.replaceAll("|", "\\|");
+  }
+
+  // Parsing removes one backslash from every `\|` in an alias. Add one to
+  // existing backslash runs so parser-produced values survive serialization.
+  return alias.replace(/\\+\|/g, (value) => "\\" + value);
 }
 
 /**
@@ -73,9 +84,6 @@ function assertRepresentable(node: WikiEmbed | WikiLink): undefined {
     check(!/[[\]]/.test(node.alias), "a bracket in `alias`");
     check(!/[\r\n]/.test(node.alias), "a line ending in `alias`");
     check(node.alias === node.alias.replace(/^[\t ]+|[\t ]+$/g, ""), "an untrimmed `alias`");
-    // Parsing unescapes `\|` to `|`, so a literal backslash-pipe sequence
-    // cannot survive a round trip.
-    check(!node.alias.includes("\\|"), "a `\\|` sequence in `alias`");
   }
 
   function check(valid: boolean, reason: string): undefined {
