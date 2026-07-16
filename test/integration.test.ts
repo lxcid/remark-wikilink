@@ -11,7 +11,7 @@ import remarkWikilink, {
   defaultResolveHref,
   wikilink,
   wikilinkFromMarkdown,
-  wikilinkTable,
+  gfmTable,
   wikilinkToMarkdown,
 } from "@lxcid/remark-wikilink";
 import remarkWikilinkGfm from "@lxcid/remark-wikilink/gfm";
@@ -70,7 +70,7 @@ test("works with react-markdown", function () {
 test("exposes the lower-level pieces as named exports", function () {
   assert.equal(typeof remarkWikilink, "function");
   assert.equal(typeof wikilink, "function");
-  assert.equal(typeof wikilinkTable, "function");
+  assert.equal(typeof gfmTable, "function");
   assert.equal(typeof wikilinkFromMarkdown, "function");
   assert.equal(typeof wikilinkToMarkdown, "function");
   assert.equal(typeof defaultResolveHref, "function");
@@ -78,7 +78,7 @@ test("exposes the lower-level pieces as named exports", function () {
   const syntax = wikilink();
   assert.ok(syntax.text);
 
-  const table = wikilinkTable();
+  const table = gfmTable();
   assert.ok(table.flow);
 });
 

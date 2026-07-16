@@ -136,14 +136,27 @@ Lower-level pieces are named exports, so micromark and mdast users are not
 forced through remark:
 
 - `wikilink()` — micromark syntax extension (text constructs)
-- `wikilinkTable()` — micromark wiki-aware GFM table extension (flow
-  construct; register it _after_ the stock GFM extension so it takes
-  precedence)
+- `gfmTable()` — micromark wiki-aware GFM table extension: a drop-in
+  replacement for `gfmTable` from `micromark-extension-gfm-table` (same
+  name, same token types, superset behavior). When composing manually, use
+  it *instead of* the stock extension; if the stock one is also present,
+  register this one _after_ it so it takes precedence
 - `wikilinkFromMarkdown(options?)` — `mdast-util-from-markdown` extension
 - `wikilinkToMarkdown()` — `mdast-util-to-markdown` extension
 - `defaultResolveHref(reference)` — the default URL resolver
 - Types: `Options`, `WikiLink`, `WikiEmbed`, `WikiReference`,
   `WikiLinkData`, `WikiEmbedData`
+
+Manual composition from the pieces (no `remark-gfm`, no preset):
+
+```js
+import {gfmTableFromMarkdown, gfmTableToMarkdown} from "mdast-util-gfm-table";
+import {gfmTable, wikilink, wikilinkFromMarkdown, wikilinkToMarkdown} from "@lxcid/remark-wikilink";
+
+micromarkExtensions.push(gfmTable(), wikilink());
+fromMarkdownExtensions.push(gfmTableFromMarkdown(), wikilinkFromMarkdown());
+toMarkdownExtensions.push(gfmTableToMarkdown(), wikilinkToMarkdown());
+```
 
 ### `Options`
 

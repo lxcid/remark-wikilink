@@ -23,7 +23,7 @@ import type { Options } from "./types.js";
 export { wikilinkFromMarkdown } from "./from-markdown.js";
 export { defaultResolveHref } from "./resolve.js";
 export { wikilink } from "./syntax.js";
-export { wikilinkTable } from "./table-syntax.js";
+export { gfmTable } from "./table-syntax.js";
 export { wikilinkToMarkdown } from "./to-markdown.js";
 export type {
   Options,

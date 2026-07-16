@@ -49,12 +49,15 @@ type Align = "center" | "left" | "none" | "right";
 /**
  * Create an extension for `micromark` to enable wiki-aware GFM table syntax.
  *
- * It emits the exact token types of `micromark-extension-gfm-table`, so the
- * regular GFM mdast bridge handles the result. Register it *after* the stock
- * GFM extension so it takes precedence (`remark-wikilink/gfm` does this for
- * you).
+ * A drop-in replacement for `gfmTable` from
+ * `micromark-extension-gfm-table` (hence the same name): it emits the exact
+ * token types of the stock extension — so the regular GFM mdast bridge
+ * handles the result — and accepts a strict superset of stock tables. When
+ * composing manually, use it *instead of* the stock extension; if the stock
+ * extension is also present, register this one *after* it so it takes
+ * precedence (`remark-wikilink/gfm` does this for you).
  */
-export function wikilinkTable(): Extension {
+export function gfmTable(): Extension {
   return {
     flow: {
       null: { name: "table", tokenize: tokenizeTable, resolveAll: resolveTable },

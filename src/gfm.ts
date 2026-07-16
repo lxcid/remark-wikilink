@@ -19,7 +19,7 @@ import type { Root } from "mdast";
 import remarkGfm, { type Options as GfmOptions } from "remark-gfm";
 import type { Processor } from "unified";
 import remarkWikilink from "./index.js";
-import { wikilinkTable } from "./table-syntax.js";
+import { gfmTable } from "./table-syntax.js";
 import type { Options } from "./types.js";
 
 /**
@@ -56,7 +56,7 @@ export default function remarkWikilinkGfm(
 
   // Registered after the GFM extension so micromark tries the wiki-aware
   // table construct first (later extensions take precedence).
-  micromarkExtensions.push(wikilinkTable());
+  micromarkExtensions.push(gfmTable());
 }
 
 export { remarkWikilinkGfm };
