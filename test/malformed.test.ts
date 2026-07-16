@@ -1,6 +1,6 @@
 // Rollback cases: every failed wiki attempt must consume no input and leave
-// ordinary GFM behavior fully intact. Each case is compared structurally
-// against stock `remark-gfm` output.
+// stock GFM behavior intact. Each case is compared structurally against
+// stock `remark-gfm` output.
 
 import assert from "node:assert/strict";
 import test from "node:test";

@@ -139,7 +139,7 @@ test("preserves positional information", function () {
   });
 });
 
-test("nodes carry no rendering data — target and alias are the only authority", function () {
+test("parser-produced nodes carry no derived rendering data", function () {
   const link = soleWikiLink("[[analysis/profile#Business profile|Initial profile]]");
   assert.equal(link.data, undefined);
   const embed = soleWikiEmbed("![[Note]]");

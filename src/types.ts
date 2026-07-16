@@ -39,8 +39,9 @@ export interface Options {
 /**
  * mdast node for a wiki link such as `[[target|alias]]`.
  *
- * `target` and `alias` are the single source of truth — nothing derived is
- * cached on the node, so transforms may rewrite them freely.
+ * The library caches no derived rendering state; handler defaults are
+ * derived from the live `target` and `alias`. Explicit mdast
+ * `data.hProperties` and `data.hChildren` remain authoritative.
  */
 export interface WikiLink extends Node {
   /**
@@ -65,8 +66,9 @@ export interface WikiLink extends Node {
 /**
  * mdast node for a wiki embed such as `![[target|alias]]`.
  *
- * `target` and `alias` are the single source of truth — nothing derived is
- * cached on the node, so transforms may rewrite them freely.
+ * The library caches no derived rendering state; handler defaults are
+ * derived from the live `target` and `alias`. Explicit mdast
+ * `data.hProperties` and `data.hChildren` remain authoritative.
  */
 export interface WikiEmbed extends Node {
   /**

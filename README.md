@@ -16,9 +16,9 @@ tables alone for exactly that reason.)
 
 With stock `remark-gfm`, the alias `|` above splits the first cell in two.
 With this package, the wiki link is recognized as one opaque span while the
-table row is still being scanned, so the cell — and every other GFM behavior —
-stays intact. No string rewriting, no sentinel encoding, no `\|` escaping
-required from your authors.
+table row is still being scanned, so the cell stays intact. Outside complete
+wiki-shaped spans, stock GFM behavior is preserved. No string rewriting, no
+sentinel encoding, no `\|` escaping required from your authors.
 
 ## Contents
 
@@ -161,9 +161,9 @@ rows, a `[` starts a **partial, reversible attempt** at a complete wiki span.
 If the span is complete (`[[target|alias]]` with a closing `]]` on the same
 line), it becomes one opaque `data` token and its pipes are never classified
 as cell dividers. If not, the attempt rolls back without consuming a single
-character and ordinary GFM behavior continues. The fork emits the exact token
-types of the stock extension, so the standard `mdast-util-gfm-table` bridge —
-and everything built on it — keeps working unchanged.
+character and stock GFM behavior is preserved. The fork emits the exact token
+types of the stock extension, so the standard `mdast-util-gfm-table` bridge
+continues to handle its output.
 
 If micromark or `micromark-extension-gfm-table` ever grow a hook for opaque
 inline spans during row scanning, this fork collapses into a configuration
@@ -199,11 +199,12 @@ preset removes the gamble by owning the order itself — `remark-gfm` first,
 The preset doesn't remove or patch anything inside `remark-gfm`: it applies
 it in full, then registers `gfmTable()` last, so the stock table construct
 is still there but never reached — ours is tried first, succeeds wherever
-stock would (a tested strict superset), and failed attempts roll back
-without a trace. That's ordinary micromark precedence, not a trick. The only
-cost is one extra failed table attempt per non-table line; composing
-manually from the pieces (see [API](#api)) registers a single table
-construct and avoids even that.
+stock would, and protects complete wiki-shaped spans from cell splitting.
+Outside those spans its output is tested against stock GFM, and failed wiki
+attempts roll back without a trace. That's ordinary micromark precedence,
+not a trick. The only cost is one extra failed table attempt per non-table
+line; composing manually from the pieces (see [API](#api)) registers a
+single table construct and avoids even that.
 
 ### Sharp edges when mixing with remark-gfm
 
@@ -224,9 +225,10 @@ forced through remark:
 - `wikilink()` — micromark syntax extension (text constructs)
 - `gfmTable()` — micromark wiki-aware GFM table extension: a drop-in
   replacement for `gfmTable` from `micromark-extension-gfm-table` (same
-  name, same token types, superset behavior). When composing manually, use
-  it *instead of* the stock extension; if the stock one is also present,
-  register this one _after_ it so it takes precedence
+  name and token types), preserving stock behavior outside complete
+  wiki-shaped spans. When composing manually, use it *instead of* the stock
+  extension; if the stock one is also present, register this one _after_ it
+  so it takes precedence
 - `wikilinkFromMarkdown()` — `mdast-util-from-markdown` extension
 - `wikilinkToMarkdown()` — `mdast-util-to-markdown` extension; throws on
   nodes the grammar cannot represent (brackets or pipes in `target`, line
@@ -343,10 +345,12 @@ interface WikiEmbed {
 
 Both are registered in mdast’s `PhrasingContentMap`/`RootContentMap`, carry
 full positional information, and round-trip through
-`remark-stringify`/`mdast-util-to-markdown`. `target` and `alias` are the
-**single source of truth**: nothing derived is cached on the node, so
-transforms may rewrite them freely and every later stage — Markdown and
-HTML alike — follows.
+`remark-stringify`/`mdast-util-to-markdown`. The library caches no derived
+rendering state: Markdown serialization and the handlers' default HTML
+properties and children are derived from the live `target` and `alias`.
+Transforms may therefore rewrite those fields before conversion. Explicit
+mdast `data.hProperties` and `data.hChildren` remain authoritative during
+HTML conversion.
 
 ## HTML output
 
@@ -362,9 +366,11 @@ Rendering is a separate, explicit layer: pass `wikilinkHandlers()` to
 <a class="wiki-embed" href="chart.png">chart.png</a>
 ```
 
-The handlers read the node's live `target`/`alias` at conversion time, so
-they always agree with your transforms. **The handlers are required for
-usable HTML**: without them, `mdast-util-to-hast`'s unknown-node fallback
+The handlers derive their default link properties and children from the
+node's live `target`/`alias` at conversion time. Explicit
+`data.hProperties` and `data.hChildren` are then applied by
+`mdast-util-to-hast` and remain authoritative. **The handlers are required
+for usable HTML**: without them, `mdast-util-to-hast`'s unknown-node fallback
 replaces each wiki node with an empty `<div>` — the link text is lost and
 the markup is invalid inside a paragraph. Override `resolveHref` to
 integrate with your router or vault resolver.

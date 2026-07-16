@@ -2,9 +2,10 @@
  * hast handlers for `mdast-util-to-hast` (and therefore `remark-rehype` and
  * `react-markdown`).
  *
- * Rendering happens at conversion time and reads the node's live `target`
- * and `alias` — the mdast fields are the single source of truth, so a
- * transform that rewrites a target can never diverge from the HTML.
+ * Rendering defaults are derived at conversion time from the node's live
+ * `target` and `alias`. Explicit mdast `data.hProperties` and
+ * `data.hChildren` remain authoritative when `mdast-util-to-hast` applies
+ * node data.
  */
 import type { Element } from "hast";
 import type { Handlers, State } from "mdast-util-to-hast";

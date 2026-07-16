@@ -59,8 +59,8 @@ test("renders paragraphs and embeds through remark-rehype", async function () {
 });
 
 // The regression that motivated moving rendering out of parse time:
-// rendering reads the node's live fields, so a transform that renames a
-// target can never leave the HTML pointing at the old one.
+// handler defaults read the node's live fields, so a transform that renames
+// a target updates the default HTML.
 const retarget = () => (tree: Root) => {
   visit(tree, "wikiLink", (node) => {
     node.target = "moved/Note";

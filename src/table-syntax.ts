@@ -5,10 +5,9 @@
 // attempt at a complete wiki span (`[[target|alias]]`, the same grammar as
 // `syntax.ts`). A successful attempt is one opaque `data` token, so its
 // internal `|` characters are never classified as cell dividers. A failed
-// attempt rolls back without consuming input and ordinary GFM behavior
-// continues. Everything else — token types, cell resolution, alignment —
-// matches the upstream construct, so `mdast-util-gfm-table` keeps working
-// unchanged.
+// attempt rolls back without consuming input. Outside complete wiki-shaped
+// spans, behavior is preserved against the upstream construct. The fork
+// emits its token types, so `mdast-util-gfm-table` handles the result.
 
 import { ok as assert } from "devlop";
 import { factorySpace } from "micromark-factory-space";
@@ -52,10 +51,11 @@ type Align = "center" | "left" | "none" | "right";
  * A drop-in replacement for `gfmTable` from
  * `micromark-extension-gfm-table` (hence the same name): it emits the exact
  * token types of the stock extension — so the regular GFM mdast bridge
- * handles the result — and accepts a strict superset of stock tables. When
- * composing manually, use it *instead of* the stock extension; if the stock
- * extension is also present, register this one *after* it so it takes
- * precedence (`@lxcid/remark-wikilink/gfm` does this for you).
+ * handles the result — and preserves stock behavior outside complete
+ * wiki-shaped spans. When composing manually, use it *instead of* the stock
+ * extension; if the stock extension is also present, register this one
+ * *after* it so it takes precedence (`@lxcid/remark-wikilink/gfm` does this
+ * for you).
  */
 export function gfmTable(): Extension {
   return {

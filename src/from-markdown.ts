@@ -10,9 +10,9 @@ import type { WikiEmbed, WikiLink } from "./types.js";
  * Create an extension for `mdast-util-from-markdown` to enable wiki links
  * and embeds.
  *
- * Nodes carry only `target` and `alias` — the single source of truth.
- * Rendering is separate: pass `wikilinkHandlers()` to `remark-rehype` to get
- * HTML (see the readme's HTML output section).
+ * Parser-produced nodes carry `target` and `alias` without cached derived
+ * rendering state. Rendering is separate: pass `wikilinkHandlers()` to
+ * `remark-rehype` to get HTML (see the readme's HTML output section).
  */
 export function wikilinkFromMarkdown(): FromMarkdownExtension {
   return {
