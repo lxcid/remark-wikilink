@@ -1,8 +1,0 @@
-{
-  "mode": "pre",
-  "tag": "alpha",
-  "initialVersions": {
-    "@lxcid/remark-wikilink": "0.0.0"
-  },
-  "changesets": []
-}
